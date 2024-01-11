@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils"
 import meta from "@/public/providers/meta.png"
 import mistral from "@/public/providers/mistral.png"
 import perplexity from "@/public/providers/perplexity.png"
+import aware from "@/public/providers/aware.png"
 import { LLMID } from "@/types"
 import { IconSparkles } from "@tabler/icons-react"
 import { useTheme } from "next-themes"
@@ -26,6 +27,20 @@ export const ModelIcon: FC<ModelIconProps> = ({
   const { theme } = useTheme()
 
   switch (modelId as string) {
+    case "aware-1.0":
+      return (
+        <Image
+          className={cn(
+            "rounded-sm",
+            theme === "dark" ? "bg-white" : "border-[1px] border-black"
+          )}
+          style={{ objectFit: "cover" }}
+          src={aware.src}
+          alt="Aware"
+          width={width}
+          height={height}
+        />
+      )
     case "gpt-4-1106-preview":
     case "gpt-4-vision-preview":
     case "gpt-3.5-turbo-1106":

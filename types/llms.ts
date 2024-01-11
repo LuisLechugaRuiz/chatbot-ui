@@ -1,11 +1,14 @@
 import { ModelProvider } from "."
 
 export type LLMID =
+  | AwareLLMID
   | OpenAILLMID
   | GoogleLLMID
   | AnthropicLLMID
   | MistralLLMID
   | PerplexityLLMID
+
+export type AwareLLMID = "aware-1.0" // Aware 1
 
 // OpenAI Models (UPDATED 12/18/23)
 export type OpenAILLMID =

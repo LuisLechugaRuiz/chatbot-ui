@@ -1,4 +1,5 @@
 export type ModelProvider =
+  | "aware"
   | "openai"
   | "google"
   | "anthropic"
