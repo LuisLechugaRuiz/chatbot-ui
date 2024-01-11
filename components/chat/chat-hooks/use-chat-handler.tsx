@@ -9,6 +9,8 @@ import {
   createTempMessages,
   handleCreateChat,
   handleCreateMessages,
+  handleAssistantMessage,
+  handleUserMessage,
   handleHostedChat,
   handleLocalChat,
   handleRetrieval,
@@ -227,6 +229,100 @@ export const useChatHandler = () => {
     }
   }
 
+  const handleSendMessageUser = async (
+    messageContent: string,
+    chatMessages: ChatMessage[]
+  ) => {
+    try {
+      setIsGenerating(true)
+
+      const newAbortController = new AbortController()
+      setAbortController(newAbortController)
+
+      const modelData = [...LLM_LIST, ...availableLocalModels].find(
+        llm => llm.modelId === chatSettings?.model
+      )
+
+      let currentChat = selectedChat ? { ...selectedChat } : null
+      if (!currentChat) {
+        currentChat = await handleCreateChat(
+          chatSettings!,
+          profile!,
+          selectedWorkspace!,
+          messageContent,
+          selectedAssistant!,
+          newMessageFiles,
+          setSelectedChat,
+          setChats,
+          setChatFiles
+        )
+      }
+
+      if (!currentChat) {
+        throw new Error("Chat not found")
+      }
+
+      setUserInput("")
+      await handleUserMessage(
+        chatMessages,
+        currentChat,
+        profile!,
+        modelData!,
+        messageContent,
+        newMessageImages,
+        setChatMessages
+      )
+    } catch (error) {
+      console.error("Error in addMessageToChat:", error)
+    }
+  }
+
+  const handleReceiveMessageAssistant = async (
+    generatedText: string,
+    chatMessages: ChatMessage[]
+  ) => {
+    try {
+      setIsGenerating(false)
+      const modelData = [...LLM_LIST, ...availableLocalModels].find(
+        llm => llm.modelId === chatSettings?.model
+      )
+
+      let currentChat = selectedChat ? { ...selectedChat } : null
+      if (!currentChat) {
+        throw new Error("Chat not found")
+      }
+
+      let retrievedFileItems: Tables<"file_items">[] = []
+
+      if (
+        (newMessageFiles.length > 0 || chatFiles.length > 0) &&
+        useRetrieval
+      ) {
+        setToolInUse("retrieval")
+
+        retrievedFileItems = await handleRetrieval(
+          userInput,
+          newMessageFiles,
+          chatFiles,
+          chatSettings!.embeddingsProvider
+        )
+      }
+
+      await handleAssistantMessage(
+        chatMessages,
+        currentChat,
+        profile!,
+        modelData!,
+        generatedText,
+        retrievedFileItems,
+        setChatMessages,
+        setChatFileItems
+      )
+    } catch (error) {
+      console.error("Error in handleAssistantMessage:", error)
+    }
+  }
+
   const handleSendEdit = async (
     editedContent: string,
     sequenceNumber: number
@@ -253,6 +349,8 @@ export const useChatHandler = () => {
     prompt,
     handleNewChat,
     handleSendMessage,
+    handleSendMessageUser,
+    handleReceiveMessageAssistant,
     handleFocusChatInput,
     handleStopMessage,
     handleSendEdit

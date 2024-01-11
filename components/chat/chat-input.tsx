@@ -15,6 +15,7 @@ import { ChatFilesDisplay } from "./chat-files-display"
 import { useChatHandler } from "./chat-hooks/use-chat-handler"
 import { usePromptAndCommand } from "./chat-hooks/use-prompt-and-command"
 import { useSelectFileHandler } from "./chat-hooks/use-select-file-handler"
+import webSocketManager from "../chat/chat-helpers/websocket_manager"
 
 interface ChatInputProps {}
 
@@ -42,9 +43,24 @@ export const ChatInput: FC<ChatInputProps> = ({}) => {
   const {
     chatInputRef,
     handleSendMessage,
+    handleSendMessageUser,
+    handleReceiveMessageAssistant,
     handleStopMessage,
     handleFocusChatInput
   } = useChatHandler()
+
+  webSocketManager.setOnMessageCallback((message: string) => {
+    handleReceiveMessageAssistant(message, chatMessages)
+  })
+
+  function sendMessage(message: string) {
+    if (webSocketManager.readyState() === WebSocket.OPEN) {
+      const jsonMessage = JSON.stringify({ message: message })
+      webSocketManager.sendMessage(jsonMessage)
+    } else {
+      console.error("WebSocket is not open.")
+    }
+  }
 
   const { handleInputChange } = usePromptAndCommand()
 
@@ -62,7 +78,8 @@ export const ChatInput: FC<ChatInputProps> = ({}) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault()
       setIsPromptPickerOpen(false)
-      handleSendMessage(userInput, chatMessages, false)
+      handleSendMessageUser(userInput, chatMessages)
+      sendMessage(userInput)
     }
 
     if (
@@ -159,7 +176,8 @@ export const ChatInput: FC<ChatInputProps> = ({}) => {
               onClick={() => {
                 if (!userInput) return
 
-                handleSendMessage(userInput, chatMessages, false)
+                handleSendMessageUser(userInput, chatMessages)
+                sendMessage(userInput)
               }}
               size={30}
             />
