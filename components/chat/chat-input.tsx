@@ -7,6 +7,7 @@ import {
   IconPlayerStopFilled,
   IconSend
 } from "@tabler/icons-react"
+import { SupabaseRealTimeManager } from "@/lib/supabase/realtime-manager"
 import { FC, useContext, useEffect, useRef } from "react"
 import { Input } from "../ui/input"
 import { TextareaAutosize } from "../ui/textarea-autosize"
@@ -15,7 +16,6 @@ import { ChatFilesDisplay } from "./chat-files-display"
 import { useChatHandler } from "./chat-hooks/use-chat-handler"
 import { usePromptAndCommand } from "./chat-hooks/use-prompt-and-command"
 import { useSelectFileHandler } from "./chat-hooks/use-select-file-handler"
-import webSocketManager from "../chat/chat-helpers/websocket_manager"
 
 interface ChatInputProps {}
 
@@ -49,18 +49,11 @@ export const ChatInput: FC<ChatInputProps> = ({}) => {
     handleFocusChatInput
   } = useChatHandler()
 
-  webSocketManager.setOnMessageCallback((message: string) => {
-    handleReceiveMessageAssistant(message, chatMessages)
-  })
-
-  function sendMessage(message: string) {
-    if (webSocketManager.readyState() === WebSocket.OPEN) {
-      const jsonMessage = JSON.stringify({ message: message })
-      webSocketManager.sendMessage(jsonMessage)
-    } else {
-      console.error("WebSocket is not open.")
+  const supabaseRealTimeManager = SupabaseRealTimeManager.getInstance(
+    (message: string) => {
+      handleReceiveMessageAssistant(message, chatMessages)
     }
-  }
+  )
 
   const { handleInputChange } = usePromptAndCommand()
 
@@ -79,7 +72,6 @@ export const ChatInput: FC<ChatInputProps> = ({}) => {
       event.preventDefault()
       setIsPromptPickerOpen(false)
       handleSendMessageUser(userInput, chatMessages)
-      sendMessage(userInput)
     }
 
     if (
@@ -177,7 +169,6 @@ export const ChatInput: FC<ChatInputProps> = ({}) => {
                 if (!userInput) return
 
                 handleSendMessageUser(userInput, chatMessages)
-                sendMessage(userInput)
               }}
               size={30}
             />

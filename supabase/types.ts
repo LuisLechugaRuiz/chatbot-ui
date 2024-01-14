@@ -152,6 +152,78 @@ export interface Database {
           }
         ]
       }
+      backend_messages: {
+        Row: {
+          active: boolean
+          chat_id: string
+          content: string | null
+          created_at: string
+          id: string
+          image_paths: string[]
+          message_type: string
+          model: string
+          name: string | null
+          process_name: string
+          role: string
+          sequence_number: number
+          tool_call_id: string | null
+          tool_calls: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          chat_id: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          image_paths: string[]
+          message_type: string
+          model: string
+          name?: string | null
+          process_name: string
+          role: string
+          sequence_number: number
+          tool_call_id?: string | null
+          tool_calls?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          chat_id?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          image_paths?: string[]
+          message_type?: string
+          model?: string
+          name?: string | null
+          process_name?: string
+          role?: string
+          sequence_number?: number
+          tool_call_id?: string | null
+          tool_calls?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backend_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "backend_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       chat_files: {
         Row: {
           chat_id: string
@@ -632,6 +704,78 @@ export interface Database {
           }
         ]
       }
+      frontend_messages: {
+        Row: {
+          active: boolean
+          chat_id: string
+          content: string | null
+          created_at: string
+          id: string
+          image_paths: string[]
+          message_type: string
+          model: string
+          name: string | null
+          process_name: string
+          role: string
+          sequence_number: number
+          tool_call_id: string | null
+          tool_calls: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          chat_id: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          image_paths: string[]
+          message_type: string
+          model: string
+          name?: string | null
+          process_name: string
+          role: string
+          sequence_number: number
+          tool_call_id?: string | null
+          tool_calls?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          chat_id?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          image_paths?: string[]
+          message_type?: string
+          model?: string
+          name?: string | null
+          process_name?: string
+          role?: string
+          sequence_number?: number
+          tool_call_id?: string | null
+          tool_calls?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "frontend_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "frontend_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       message_file_items: {
         Row: {
           created_at: string
@@ -680,38 +824,56 @@ export interface Database {
       }
       messages: {
         Row: {
+          active: boolean
           chat_id: string
-          content: string
+          content: string | null
           created_at: string
           id: string
           image_paths: string[]
+          message_type: string
           model: string
+          name: string | null
+          process_name: string
           role: string
           sequence_number: number
+          tool_call_id: string | null
+          tool_calls: Json | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          active?: boolean
           chat_id: string
-          content: string
+          content?: string | null
           created_at?: string
           id?: string
           image_paths: string[]
+          message_type: string
           model: string
+          name?: string | null
+          process_name: string
           role: string
           sequence_number: number
+          tool_call_id?: string | null
+          tool_calls?: Json | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          active?: boolean
           chat_id?: string
-          content?: string
+          content?: string | null
           created_at?: string
           id?: string
           image_paths?: string[]
+          message_type?: string
           model?: string
+          name?: string | null
+          process_name?: string
           role?: string
           sequence_number?: number
+          tool_call_id?: string | null
+          tool_calls?: Json | null
           updated_at?: string | null
           user_id?: string
         }
@@ -860,6 +1022,7 @@ export interface Database {
           display_name: string
           google_gemini_api_key: string | null
           has_onboarded: boolean
+          has_topics: boolean
           id: string
           image_path: string
           image_url: string
@@ -885,6 +1048,7 @@ export interface Database {
           display_name: string
           google_gemini_api_key?: string | null
           has_onboarded?: boolean
+          has_topics?: boolean
           id?: string
           image_path: string
           image_url: string
@@ -910,6 +1074,7 @@ export interface Database {
           display_name?: string
           google_gemini_api_key?: string | null
           has_onboarded?: boolean
+          has_topics?: boolean
           id?: string
           image_path?: string
           image_url?: string
@@ -1027,6 +1192,92 @@ export interface Database {
           }
         ]
       }
+      topics: {
+        Row: {
+          content: string
+          created_at: string
+          description: string
+          id: string
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          description: string
+          id?: string
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      working_memory: {
+        Row: {
+          chat_id: string
+          context: string
+          created_at: string
+          id: string
+          thought: string
+          updated_at: string | null
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          chat_id: string
+          context: string
+          created_at?: string
+          id?: string
+          thought: string
+          updated_at?: string | null
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          chat_id?: string
+          context?: string
+          created_at?: string
+          id?: string
+          thought?: string
+          updated_at?: string | null
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "working_memory_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "working_memory_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       workspaces: {
         Row: {
           created_at: string
@@ -1135,6 +1386,62 @@ export interface Database {
         }
         Returns: Record<string, unknown>
       }
+      get_active_messages: {
+        Args: {
+          p_chat_id: string
+          p_process_name: string
+        }
+        Returns: {
+          id: string
+          chat_id: string
+          user_id: string
+          created_at: string
+          updated_at: string
+          model: string
+          process_name: string
+          message_type: string
+          role: string
+          sequence_number: number
+          name: string
+          content: string
+          tool_calls: Json
+          tool_call_id: string
+          active: boolean
+        }[]
+      }
+      insert_new_message: {
+        Args: {
+          p_chat_id: string
+          p_user_id: string
+          p_model: string
+          p_process_name: string
+          p_message_type: string
+          p_role: string
+          p_image_paths?: string[]
+          p_name?: string
+          p_content?: string
+          p_tool_calls?: Json
+          p_tool_call_id?: string
+        }
+        Returns: {
+          active: boolean
+          chat_id: string
+          content: string | null
+          created_at: string
+          id: string
+          image_paths: string[]
+          message_type: string
+          model: string
+          name: string | null
+          process_name: string
+          role: string
+          sequence_number: number
+          tool_call_id: string | null
+          tool_calls: Json | null
+          updated_at: string | null
+          user_id: string
+        }[]
+      }
       match_file_items_local: {
         Args: {
           query_embedding: string
@@ -1174,6 +1481,50 @@ export interface Database {
           p_name: string
         }
         Returns: boolean
+      }
+      send_message_to_assistant: {
+        Args: {
+          p_chat_id: string
+          p_user_id: string
+          p_model: string
+          p_process_name: string
+          p_message_type: string
+          p_role: string
+          p_image_paths?: string[]
+          p_name?: string
+          p_content?: string
+          p_tool_calls?: Json
+          p_tool_call_id?: string
+        }
+        Returns: {
+          returned_id: string
+          returned_created_at: string
+        }[]
+      }
+      send_message_to_user: {
+        Args: {
+          p_chat_id: string
+          p_user_id: string
+          p_model: string
+          p_process_name: string
+          p_message_type: string
+          p_role: string
+          p_image_paths?: string[]
+          p_name?: string
+          p_content?: string
+          p_tool_calls?: Json
+          p_tool_call_id?: string
+        }
+        Returns: {
+          returned_id: string
+          returned_created_at: string
+        }[]
+      }
+      soft_delete_message: {
+        Args: {
+          p_message_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

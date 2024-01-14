@@ -289,7 +289,7 @@ export const useChatHandler = () => {
 
       let currentChat = selectedChat ? { ...selectedChat } : null
       if (!currentChat) {
-        throw new Error("Chat not found")
+        throw new Error("Chat not found at receive!")
       }
 
       let retrievedFileItems: Tables<"file_items">[] = []
@@ -304,7 +304,8 @@ export const useChatHandler = () => {
           userInput,
           newMessageFiles,
           chatFiles,
-          chatSettings!.embeddingsProvider
+          chatSettings!.embeddingsProvider,
+          sourceCount
         )
       }
 

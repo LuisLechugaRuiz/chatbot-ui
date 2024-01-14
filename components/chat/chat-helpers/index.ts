@@ -22,6 +22,7 @@ import {
 import React from "react"
 import { toast } from "sonner"
 import { v4 as uuidv4 } from "uuid"
+import { UserSupabaseClient } from "@/lib/supabase/user-client"
 
 export const validateChatSettings = (
   chatSettings: ChatSettings | null,
@@ -497,18 +498,43 @@ export const handleUserMessage = async (
   newMessageImages: MessageImage[],
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
 ) => {
-  const finalUserMessage: TablesInsert<"messages"> = {
-    chat_id: currentChat.id,
-    user_id: profile.user_id,
-    content: messageContent,
-    model: modelData.modelId,
-    role: "user",
-    sequence_number: chatMessages.length,
-    image_paths: []
+  // Send message to the assistant
+  const userSupabaseClient = new UserSupabaseClient()
+
+  let userMessage = await userSupabaseClient.insertMessage(
+    currentChat.id,
+    profile.user_id,
+    modelData.modelId,
+    "user",
+    "UserMessage",
+    "user",
+    profile.display_name,
+    messageContent
+  )
+  let createdUserMessage: TablesInsert<"messages"> = {
+    id: userMessage.id,
+    chat_id: userMessage.chat_id,
+    user_id: userMessage.user_id,
+    model: userMessage.model,
+    process_name: userMessage.process_name,
+    message_type: userMessage.message_type,
+    role: userMessage.role,
+    name: userMessage.name,
+    content: userMessage.content,
+    sequence_number: userMessage.sequence_number,
+    image_paths: userMessage.image_paths || []
   }
 
-  // Logic for uploading images and creating the user message
-  const createdUserMessage = await createMessage(finalUserMessage)
+  await userSupabaseClient.sendMessageToAssistant(
+    currentChat.id,
+    profile.user_id,
+    modelData.modelId,
+    "user",
+    "UserMessage",
+    "user",
+    profile.display_name,
+    messageContent
+  )
 
   // Upload each image (stored in newMessageImages) for the user message to message_images bucket
   const uploadPromises = newMessageImages
@@ -525,16 +551,21 @@ export const handleUserMessage = async (
     })
 
   const paths = (await Promise.all(uploadPromises)).filter(Boolean) as string[]
-
-  updateMessage(createdUserMessage.id, {
-    ...createdUserMessage,
-    image_paths: paths
-  })
+  let updatedUserMessage
+  try {
+    updatedUserMessage = await updateMessage(createdUserMessage.id, {
+      ...createdUserMessage,
+      image_paths: paths
+    })
+  } catch (error) {
+    console.error("Error updating message:", error)
+    throw error
+  }
 
   // Update the chat messages state with the new user message
   setChatMessages([
     ...chatMessages,
-    { message: createdUserMessage, fileItems: [] } // Assuming this is the correct structure
+    { message: updatedUserMessage, fileItems: [] } // Assuming this is the correct structure
   ])
 }
 
@@ -551,9 +582,12 @@ export const handleAssistantMessage = async (
   const finalAssistantMessage: TablesInsert<"messages"> = {
     chat_id: currentChat.id,
     user_id: profile.user_id,
-    content: generatedText,
     model: modelData.modelId,
+    process_name: "assistant",
+    message_type: "AssistantMessage",
     role: "assistant",
+    name: "Aware", // TODO: CONFIGURE THIS.
+    content: generatedText,
     sequence_number: chatMessages.length,
     image_paths: []
   }
