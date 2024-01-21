@@ -33,11 +33,17 @@ export class SupabaseRealTimeManager {
       .subscribe()
   }
 
+  public updateCallback(newCallback: CallableFunction) {
+    this.onMessageCallback = newCallback
+  }
+
   public static getInstance(
     callback: CallableFunction
   ): SupabaseRealTimeManager {
     if (!SupabaseRealTimeManager.instance) {
       SupabaseRealTimeManager.instance = new SupabaseRealTimeManager(callback)
+    } else {
+      SupabaseRealTimeManager.instance.updateCallback(callback)
     }
     return SupabaseRealTimeManager.instance
   }

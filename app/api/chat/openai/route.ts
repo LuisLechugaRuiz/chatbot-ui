@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
     const response = await openai.chat.completions.create({
       model: chatSettings.model as ChatCompletionCreateParamsBase["model"],
-      messages: messages as ChatCompletionCreateParamsBase["messages"],
+      messages: messages as ChatCompletionCreateParamsBase["ui_messages"],
       temperature: chatSettings.temperature,
       max_tokens:
         CHAT_SETTING_LIMITS[chatSettings.model].MAX_TOKEN_OUTPUT_LENGTH,

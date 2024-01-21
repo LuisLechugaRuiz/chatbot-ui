@@ -19,7 +19,7 @@ export default function ShareChatPage({ params }: ShareChatPageProps) {
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [chat, setChat] = useState<Tables<"chats"> | null>(null)
-  const [messages, setMessages] = useState<Tables<"messages">[]>([])
+  const [messages, setMessages] = useState<Tables<"ui_messages">[]>([])
 
   const onLoad = async () => {
     const session = (await supabase.auth.getSession()).data.session

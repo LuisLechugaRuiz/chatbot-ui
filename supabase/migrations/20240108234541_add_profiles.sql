@@ -137,6 +137,8 @@ BEGIN
         TRUE,
         ''
     );
+    INSERT INTO public.user_profiles(user_id)
+    VALUES(NEW.id);
 
     RETURN NEW;
 END;
@@ -171,3 +173,41 @@ CREATE POLICY "Allow authenticated update access to own profile images"
 CREATE POLICY "Allow authenticated delete access to own profile images"
     ON storage.objects FOR DELETE TO authenticated
     USING (bucket_id = 'profile_images' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+
+--------------- USER PROFILES ---------------
+
+-- TABLE --
+
+CREATE TABLE IF NOT EXISTS user_profiles (
+    -- ID
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    -- RELATIONSHIPS
+    user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+
+    -- METADATA
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ,
+
+    -- REQUIRED
+    name TEXT NOT NULL DEFAULT '',
+    basic_information TEXT NOT NULL DEFAULT '',
+    preferences TEXT NOT NULL DEFAULT '',
+    goals_and_priorities TEXT NOT NULL DEFAULT '',
+    habits_and_routines TEXT NOT NULL DEFAULT '',
+    assistant_expected_role TEXT NOT NULL DEFAULT ''
+);
+
+-- INDEXES --
+
+CREATE INDEX idx_user_profiles_user_id ON user_profiles (user_id);
+
+-- RLS --
+
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow full access to own profiles"
+    ON user_profiles
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());

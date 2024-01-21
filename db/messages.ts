@@ -3,7 +3,7 @@ import { TablesInsert, TablesUpdate } from "@/supabase/types"
 
 export const getMessageById = async (messageId: string) => {
   const { data: message } = await supabase
-    .from("messages")
+    .from("ui_messages")
     .select("*")
     .eq("id", messageId)
     .single()
@@ -17,7 +17,7 @@ export const getMessageById = async (messageId: string) => {
 
 export const getMessagesByChatId = async (chatId: string) => {
   const { data: messages } = await supabase
-    .from("messages")
+    .from("ui_messages")
     .select("*")
     .eq("chat_id", chatId)
 
@@ -28,9 +28,9 @@ export const getMessagesByChatId = async (chatId: string) => {
   return messages
 }
 
-export const createMessage = async (message: TablesInsert<"messages">) => {
+export const createMessage = async (message: TablesInsert<"ui_messages">) => {
   const { data: createdMessage, error } = await supabase
-    .from("messages")
+    .from("ui_messages")
     .insert([message])
     .select("*")
     .single()
@@ -42,9 +42,11 @@ export const createMessage = async (message: TablesInsert<"messages">) => {
   return createdMessage
 }
 
-export const createMessages = async (messages: TablesInsert<"messages">[]) => {
+export const createMessages = async (
+  messages: TablesInsert<"ui_messages">[]
+) => {
   const { data: createdMessages, error } = await supabase
-    .from("messages")
+    .from("ui_messages")
     .insert(messages)
     .select("*")
 
@@ -57,10 +59,10 @@ export const createMessages = async (messages: TablesInsert<"messages">[]) => {
 
 export const updateMessage = async (
   messageId: string,
-  message: TablesUpdate<"messages">
+  message: TablesUpdate<"ui_messages">
 ) => {
   const { data: updatedMessage, error } = await supabase
-    .from("messages")
+    .from("ui_messages")
     .update(message)
     .eq("id", messageId)
     .select("*")
@@ -74,7 +76,10 @@ export const updateMessage = async (
 }
 
 export const deleteMessage = async (messageId: string) => {
-  const { error } = await supabase.from("messages").delete().eq("id", messageId)
+  const { error } = await supabase
+    .from("ui_messages")
+    .delete()
+    .eq("id", messageId)
 
   if (error) {
     throw new Error(error.message)

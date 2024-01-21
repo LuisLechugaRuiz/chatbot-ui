@@ -28,6 +28,7 @@ export const ChatInput: FC<ChatInputProps> = ({}) => {
     userInput,
     chatMessages,
     isGenerating,
+    selectedChat,
     selectedPreset,
     selectedAssistant,
     focusPrompt,
@@ -42,18 +43,25 @@ export const ChatInput: FC<ChatInputProps> = ({}) => {
 
   const {
     chatInputRef,
-    handleSendMessage,
     handleSendMessageUser,
     handleReceiveMessageAssistant,
     handleStopMessage,
     handleFocusChatInput
   } = useChatHandler()
 
-  const supabaseRealTimeManager = SupabaseRealTimeManager.getInstance(
-    (message: string) => {
-      handleReceiveMessageAssistant(message, chatMessages)
+  const chatMessagesRef = useRef(chatMessages)
+
+  useEffect(() => {
+    chatMessagesRef.current = chatMessages
+  }, [chatMessages])
+
+  useEffect(() => {
+    if (selectedChat) {
+      SupabaseRealTimeManager.getInstance((message: string) => {
+        handleReceiveMessageAssistant(message, chatMessagesRef.current)
+      })
     }
-  )
+  }, [selectedChat, chatMessages])
 
   const { handleInputChange } = usePromptAndCommand()
 

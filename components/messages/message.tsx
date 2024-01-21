@@ -28,11 +28,11 @@ import { MessageMarkdown } from "./message-markdown"
 const ICON_SIZE = 28
 
 interface MessageProps {
-  message: Tables<"messages">
+  message: Tables<"ui_messages">
   fileItems: Tables<"file_items">[]
   isEditing: boolean
   isLast: boolean
-  onStartEdit: (message: Tables<"messages">) => void
+  onStartEdit: (message: Tables<"ui_messages">) => void
   onCancelEdit: () => void
   onSubmitEdit: (value: string, sequenceNumber: number) => void
 }
@@ -60,7 +60,7 @@ export const Message: FC<MessageProps> = ({
     files
   } = useContext(ChatbotUIContext)
 
-  const { handleSendMessage } = useChatHandler()
+  useChatHandler()
 
   const editInputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -93,11 +93,11 @@ export const Message: FC<MessageProps> = ({
 
   const handleRegenerate = async () => {
     setIsGenerating(true)
-    await handleSendMessage(
-      editedMessage || chatMessages[chatMessages.length - 2].message.content,
-      chatMessages,
-      true
-    )
+    // await handleSendMessage(
+    //   editedMessage || chatMessages[chatMessages.length - 2].message.content,
+    //   chatMessages,
+    //   true
+    // )
   }
 
   const handleStartEdit = () => {

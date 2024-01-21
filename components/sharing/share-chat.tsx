@@ -24,7 +24,7 @@ import { ShareMessage } from "./share-message"
 interface ShareChatProps {
   user: User | null
   chat: Tables<"chats">
-  messages: Tables<"messages">[]
+  messages: Tables<"ui_messages">[]
   username: string
 }
 

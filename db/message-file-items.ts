@@ -3,7 +3,7 @@ import { TablesInsert } from "@/supabase/types"
 
 export const getMessageFileItemsByMessageId = async (messageId: string) => {
   const { data: messageFileItems, error } = await supabase
-    .from("messages")
+    .from("ui_messages")
     .select(
       `
       id,

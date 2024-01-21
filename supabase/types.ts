@@ -810,7 +810,7 @@ export interface Database {
             foreignKeyName: "message_file_items_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: false
-            referencedRelation: "messages"
+            referencedRelation: "ui_messages"
             referencedColumns: ["id"]
           },
           {
@@ -1230,6 +1230,125 @@ export interface Database {
           }
         ]
       }
+      ui_messages: {
+        Row: {
+          active: boolean
+          chat_id: string
+          content: string | null
+          created_at: string
+          id: string
+          image_paths: string[]
+          message_type: string
+          model: string
+          name: string | null
+          process_name: string
+          role: string
+          sequence_number: number
+          tool_call_id: string | null
+          tool_calls: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          chat_id: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          image_paths: string[]
+          message_type: string
+          model: string
+          name?: string | null
+          process_name: string
+          role: string
+          sequence_number: number
+          tool_call_id?: string | null
+          tool_calls?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          chat_id?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          image_paths?: string[]
+          message_type?: string
+          model?: string
+          name?: string | null
+          process_name?: string
+          role?: string
+          sequence_number?: number
+          tool_call_id?: string | null
+          tool_calls?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ui_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_profiles: {
+        Row: {
+          assistant_expected_role: string
+          basic_information: string
+          created_at: string
+          goals_and_priorities: string
+          habits_and_routines: string
+          id: string
+          name: string
+          preferences: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assistant_expected_role?: string
+          basic_information?: string
+          created_at?: string
+          goals_and_priorities?: string
+          habits_and_routines?: string
+          id?: string
+          name?: string
+          preferences?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assistant_expected_role?: string
+          basic_information?: string
+          created_at?: string
+          goals_and_priorities?: string
+          habits_and_routines?: string
+          id?: string
+          name?: string
+          preferences?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       working_memory: {
         Row: {
           chat_id: string
@@ -1410,6 +1529,39 @@ export interface Database {
         }[]
       }
       insert_new_message: {
+        Args: {
+          p_chat_id: string
+          p_user_id: string
+          p_model: string
+          p_process_name: string
+          p_message_type: string
+          p_role: string
+          p_image_paths?: string[]
+          p_name?: string
+          p_content?: string
+          p_tool_calls?: Json
+          p_tool_call_id?: string
+        }
+        Returns: {
+          active: boolean
+          chat_id: string
+          content: string | null
+          created_at: string
+          id: string
+          image_paths: string[]
+          message_type: string
+          model: string
+          name: string | null
+          process_name: string
+          role: string
+          sequence_number: number
+          tool_call_id: string | null
+          tool_calls: Json | null
+          updated_at: string | null
+          user_id: string
+        }[]
+      }
+      insert_new_ui_message: {
         Args: {
           p_chat_id: string
           p_user_id: string

@@ -7,7 +7,7 @@ import { ModelIcon } from "../models/model-icon"
 
 interface MessageProps {
   username: string
-  message: Tables<"messages">
+  message: Tables<"ui_messages">
 }
 
 export const ShareMessage: FC<MessageProps> = ({ username, message }) => {
