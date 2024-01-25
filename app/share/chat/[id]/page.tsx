@@ -3,7 +3,7 @@
 import { ShareChat } from "@/components/sharing/share-chat"
 import { ShareHeader } from "@/components/sharing/share-header"
 import { ScreenLoader } from "@/components/ui/screen-loader"
-import { getChatById } from "@/db/chats"
+import { getChatByProcessId } from "@/db/chats"
 import { getMessagesByChatId } from "@/db/messages"
 import { supabase } from "@/lib/supabase/browser-client"
 import { Tables } from "@/supabase/types"
@@ -26,7 +26,7 @@ export default function ShareChatPage({ params }: ShareChatPageProps) {
 
     setSession(session)
 
-    const fetchedChat = await getChatById(params.id)
+    const fetchedChat = await getChatByProcessId(params.id)
     setChat(fetchedChat)
 
     if (!fetchedChat) {
@@ -34,7 +34,7 @@ export default function ShareChatPage({ params }: ShareChatPageProps) {
       return
     }
 
-    const fetchedMessages = await getMessagesByChatId(fetchedChat.id)
+    const fetchedMessages = await getMessagesByProcessId(fetchedChat.id)
     setMessages(fetchedMessages)
 
     setLoading(false)

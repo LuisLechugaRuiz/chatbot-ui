@@ -105,7 +105,7 @@ export async function buildFinalMessages(
   }
 
   let tempSystemMessage: Tables<"ui_messages"> = {
-    chat_id: "",
+    process_id: "",
     content: BUILT_PROMPT,
     created_at: "",
     id: processedChatMessages.length + "",
@@ -217,7 +217,7 @@ export async function buildGoogleGeminiFinalMessages(
   }
 
   let tempSystemMessage: Tables<"ui_messages"> = {
-    chat_id: "",
+    process_id: "",
     content: BUILT_PROMPT,
     created_at: "",
     id: chatMessages.length + "",

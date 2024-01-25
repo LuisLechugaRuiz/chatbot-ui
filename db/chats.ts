@@ -1,11 +1,11 @@
 import { supabase } from "@/lib/supabase/browser-client"
 import { TablesInsert, TablesUpdate } from "@/supabase/types"
 
-export const getChatById = async (chatId: string) => {
+export const getChatByProcessId = async (processId: string) => {
   const { data: chat } = await supabase
-    .from("chats")
+    .from("processes")
     .select("*")
-    .eq("id", chatId)
+    .eq("id", processId)
     .maybeSingle()
 
   return chat

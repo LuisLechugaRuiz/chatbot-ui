@@ -90,7 +90,7 @@ export const createTempMessages = (
 ) => {
   let tempUserChatMessage: ChatMessage = {
     message: {
-      chat_id: "",
+      process_id: "",
       content: messageContent,
       created_at: "",
       id: uuidv4(),
@@ -106,7 +106,7 @@ export const createTempMessages = (
 
   let tempAssistantChatMessage: ChatMessage = {
     message: {
-      chat_id: "",
+      process_id: "",
       content: "",
       created_at: "",
       id: uuidv4(),
@@ -357,7 +357,7 @@ export const handleCreateChat = async (
   await createChatFiles(
     newMessageFiles.map(file => ({
       user_id: profile.user_id,
-      chat_id: createdChat.id,
+      process_id: createdChat.id,
       file_id: file.id
     }))
   )
@@ -379,22 +379,10 @@ export const handleUserMessage = async (
   // Send message to the assistant
   const userSupabaseClient = new UserSupabaseClient()
 
-  // TODO: MOVE TO BACKEND!
-  await userSupabaseClient.insertMessage(
-    currentChat.id,
-    profile.user_id,
-    modelData.modelId,
-    "user",
-    "UserMessage",
-    "user",
-    profile.display_name,
-    messageContent
-  )
   let userMessage = await userSupabaseClient.insertUIMessage(
-    currentChat.id,
     profile.user_id,
+    currentChat.process_id,
     modelData.modelId,
-    "user",
     "UserMessage",
     "user",
     profile.display_name,
@@ -402,10 +390,9 @@ export const handleUserMessage = async (
   )
   let createdUserMessage: TablesInsert<"ui_messages"> = {
     id: userMessage.id,
-    chat_id: userMessage.chat_id,
     user_id: userMessage.user_id,
+    process_id: userMessage.process_id,
     model: userMessage.model,
-    process_name: userMessage.process_name,
     message_type: userMessage.message_type,
     role: userMessage.role,
     name: userMessage.name,
@@ -415,8 +402,8 @@ export const handleUserMessage = async (
   }
 
   await userSupabaseClient.sendMessageToAssistant(
-    currentChat.id,
     profile.user_id,
+    currentChat.process_id,
     modelData.modelId,
     "user",
     "UserMessage",
@@ -472,21 +459,19 @@ export const handleAssistantMessage = async (
   const userSupabaseClient = new UserSupabaseClient()
 
   let assistantMessage = await userSupabaseClient.insertUIMessage(
-    currentChat.id,
     profile.user_id,
+    currentChat.process_id,
     modelData.modelId,
-    "assistant",
     "AssistantMessage",
-    "assistant",
+    "assistant", // TODO: Should be not needed with MessageType.
     profile.display_name,
     generatedText
   )
   let createdAssistantMessage: TablesInsert<"ui_messages"> = {
     id: assistantMessage.id,
-    chat_id: assistantMessage.chat_id,
     user_id: assistantMessage.user_id,
+    process_id: assistantMessage.process_id,
     model: assistantMessage.model,
-    process_name: assistantMessage.process_name,
     message_type: assistantMessage.message_type,
     role: assistantMessage.role,
     name: assistantMessage.name,

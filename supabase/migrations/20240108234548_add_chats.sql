@@ -1,5 +1,7 @@
 --------------- CHATS ---------------
 
+--- TODO: REMOVE ---
+
 -- TABLE --
 
 CREATE TABLE IF NOT EXISTS chats (

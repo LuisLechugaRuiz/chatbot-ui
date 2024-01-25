@@ -113,9 +113,6 @@ export const useChatHandler = () => {
           setChatFiles
         )
         console.log("Creating chat:", currentChat)
-        console.log("Creating chat:", currentChat)
-        console.log("Creating chat:", currentChat)
-        console.log("Creating chat:", currentChat)
       }
 
       if (!currentChat) {
@@ -190,11 +187,7 @@ export const useChatHandler = () => {
   ) => {
     if (!selectedChat) return
 
-    await deleteMessagesIncludingAndAfter(
-      selectedChat.user_id,
-      selectedChat.id,
-      sequenceNumber
-    )
+    await deleteMessagesIncludingAndAfter(selectedChat.user_id, sequenceNumber)
 
     const filteredMessages = chatMessages.filter(
       chatMessage => chatMessage.message.sequence_number < sequenceNumber

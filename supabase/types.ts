@@ -34,6 +34,47 @@ export interface Database {
   }
   public: {
     Tables: {
+      agents: {
+        Row: {
+          context: string
+          created_at: string
+          id: string
+          name: string
+          profile: Json
+          thought: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          context: string
+          created_at?: string
+          id?: string
+          name: string
+          profile?: Json
+          thought: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          context?: string
+          created_at?: string
+          id?: string
+          name?: string
+          profile?: Json
+          thought?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       assistant_workspaces: {
         Row: {
           assistant_id: string
@@ -154,16 +195,16 @@ export interface Database {
       }
       backend_messages: {
         Row: {
-          active: boolean
-          chat_id: string
           content: string | null
           created_at: string
           id: string
           image_paths: string[]
+          is_active: boolean
           message_type: string
           model: string
           name: string | null
-          process_name: string
+          on_buffer: boolean
+          process_id: string
           role: string
           sequence_number: number
           tool_call_id: string | null
@@ -172,16 +213,16 @@ export interface Database {
           user_id: string
         }
         Insert: {
-          active?: boolean
-          chat_id: string
           content?: string | null
           created_at?: string
           id?: string
           image_paths: string[]
+          is_active?: boolean
           message_type: string
           model: string
           name?: string | null
-          process_name: string
+          on_buffer?: boolean
+          process_id: string
           role: string
           sequence_number: number
           tool_call_id?: string | null
@@ -190,16 +231,16 @@ export interface Database {
           user_id: string
         }
         Update: {
-          active?: boolean
-          chat_id?: string
           content?: string | null
           created_at?: string
           id?: string
           image_paths?: string[]
+          is_active?: boolean
           message_type?: string
           model?: string
           name?: string | null
-          process_name?: string
+          on_buffer?: boolean
+          process_id?: string
           role?: string
           sequence_number?: number
           tool_call_id?: string | null
@@ -209,10 +250,10 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: "backend_messages_chat_id_fkey"
-            columns: ["chat_id"]
+            foreignKeyName: "backend_messages_process_id_fkey"
+            columns: ["process_id"]
             isOneToOne: false
-            referencedRelation: "chats"
+            referencedRelation: "processes"
             referencedColumns: ["id"]
           },
           {
@@ -706,16 +747,16 @@ export interface Database {
       }
       frontend_messages: {
         Row: {
-          active: boolean
-          chat_id: string
           content: string | null
           created_at: string
           id: string
           image_paths: string[]
+          is_active: boolean
           message_type: string
           model: string
           name: string | null
-          process_name: string
+          on_buffer: boolean
+          process_id: string
           role: string
           sequence_number: number
           tool_call_id: string | null
@@ -724,16 +765,16 @@ export interface Database {
           user_id: string
         }
         Insert: {
-          active?: boolean
-          chat_id: string
           content?: string | null
           created_at?: string
           id?: string
           image_paths: string[]
+          is_active?: boolean
           message_type: string
           model: string
           name?: string | null
-          process_name: string
+          on_buffer?: boolean
+          process_id: string
           role: string
           sequence_number: number
           tool_call_id?: string | null
@@ -742,16 +783,16 @@ export interface Database {
           user_id: string
         }
         Update: {
-          active?: boolean
-          chat_id?: string
           content?: string | null
           created_at?: string
           id?: string
           image_paths?: string[]
+          is_active?: boolean
           message_type?: string
           model?: string
           name?: string | null
-          process_name?: string
+          on_buffer?: boolean
+          process_id?: string
           role?: string
           sequence_number?: number
           tool_call_id?: string | null
@@ -761,10 +802,10 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: "frontend_messages_chat_id_fkey"
-            columns: ["chat_id"]
+            foreignKeyName: "frontend_messages_process_id_fkey"
+            columns: ["process_id"]
             isOneToOne: false
-            referencedRelation: "chats"
+            referencedRelation: "processes"
             referencedColumns: ["id"]
           },
           {
@@ -824,16 +865,16 @@ export interface Database {
       }
       messages: {
         Row: {
-          active: boolean
-          chat_id: string
           content: string | null
           created_at: string
           id: string
           image_paths: string[]
+          is_active: boolean
           message_type: string
           model: string
           name: string | null
-          process_name: string
+          on_buffer: boolean
+          process_id: string
           role: string
           sequence_number: number
           tool_call_id: string | null
@@ -842,16 +883,16 @@ export interface Database {
           user_id: string
         }
         Insert: {
-          active?: boolean
-          chat_id: string
           content?: string | null
           created_at?: string
           id?: string
           image_paths: string[]
+          is_active?: boolean
           message_type: string
           model: string
           name?: string | null
-          process_name: string
+          on_buffer?: boolean
+          process_id: string
           role: string
           sequence_number: number
           tool_call_id?: string | null
@@ -860,16 +901,16 @@ export interface Database {
           user_id: string
         }
         Update: {
-          active?: boolean
-          chat_id?: string
           content?: string | null
           created_at?: string
           id?: string
           image_paths?: string[]
+          is_active?: boolean
           message_type?: string
           model?: string
           name?: string | null
-          process_name?: string
+          on_buffer?: boolean
+          process_id?: string
           role?: string
           sequence_number?: number
           tool_call_id?: string | null
@@ -879,10 +920,10 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: "messages_chat_id_fkey"
-            columns: ["chat_id"]
+            foreignKeyName: "messages_process_id_fkey"
+            columns: ["process_id"]
             isOneToOne: false
-            referencedRelation: "chats"
+            referencedRelation: "processes"
             referencedColumns: ["id"]
           },
           {
@@ -1002,6 +1043,51 @@ export interface Database {
           },
           {
             foreignKeyName: "presets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      processes: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processes_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "processes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -1232,16 +1318,16 @@ export interface Database {
       }
       ui_messages: {
         Row: {
-          active: boolean
-          chat_id: string
           content: string | null
           created_at: string
           id: string
           image_paths: string[]
+          is_active: boolean
           message_type: string
           model: string
           name: string | null
-          process_name: string
+          on_buffer: boolean
+          process_id: string
           role: string
           sequence_number: number
           tool_call_id: string | null
@@ -1250,16 +1336,16 @@ export interface Database {
           user_id: string
         }
         Insert: {
-          active?: boolean
-          chat_id: string
           content?: string | null
           created_at?: string
           id?: string
           image_paths: string[]
+          is_active?: boolean
           message_type: string
           model: string
           name?: string | null
-          process_name: string
+          on_buffer?: boolean
+          process_id: string
           role: string
           sequence_number: number
           tool_call_id?: string | null
@@ -1268,16 +1354,16 @@ export interface Database {
           user_id: string
         }
         Update: {
-          active?: boolean
-          chat_id?: string
           content?: string | null
           created_at?: string
           id?: string
           image_paths?: string[]
+          is_active?: boolean
           message_type?: string
           model?: string
           name?: string | null
-          process_name?: string
+          on_buffer?: boolean
+          process_id?: string
           role?: string
           sequence_number?: number
           tool_call_id?: string | null
@@ -1287,10 +1373,10 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: "ui_messages_chat_id_fkey"
-            columns: ["chat_id"]
+            foreignKeyName: "ui_messages_process_id_fkey"
+            columns: ["process_id"]
             isOneToOne: false
-            referencedRelation: "chats"
+            referencedRelation: "processes"
             referencedColumns: ["id"]
           },
           {
@@ -1344,54 +1430,6 @@ export interface Database {
             foreignKeyName: "user_profiles_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      working_memory: {
-        Row: {
-          chat_id: string
-          context: string
-          created_at: string
-          id: string
-          thought: string
-          updated_at: string | null
-          user_id: string
-          user_name: string
-        }
-        Insert: {
-          chat_id: string
-          context: string
-          created_at?: string
-          id?: string
-          thought: string
-          updated_at?: string | null
-          user_id: string
-          user_name: string
-        }
-        Update: {
-          chat_id?: string
-          context?: string
-          created_at?: string
-          id?: string
-          thought?: string
-          updated_at?: string | null
-          user_id?: string
-          user_name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "working_memory_chat_id_fkey"
-            columns: ["chat_id"]
-            isOneToOne: false
-            referencedRelation: "chats"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "working_memory_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           }
@@ -1478,7 +1516,6 @@ export interface Database {
       delete_message_including_and_after: {
         Args: {
           p_user_id: string
-          p_chat_id: string
           p_sequence_number: number
         }
         Returns: undefined
@@ -1486,7 +1523,6 @@ export interface Database {
       delete_messages_including_and_after: {
         Args: {
           p_user_id: string
-          p_chat_id: string
           p_sequence_number: number
         }
         Returns: undefined
@@ -1507,17 +1543,15 @@ export interface Database {
       }
       get_active_messages: {
         Args: {
-          p_chat_id: string
-          p_process_name: string
+          p_process_id: string
         }
         Returns: {
           id: string
-          chat_id: string
           user_id: string
+          process_id: string
           created_at: string
           updated_at: string
           model: string
-          process_name: string
           message_type: string
           role: string
           sequence_number: number
@@ -1525,15 +1559,15 @@ export interface Database {
           content: string
           tool_calls: Json
           tool_call_id: string
-          active: boolean
+          is_active: boolean
+          on_buffer: boolean
         }[]
       }
       insert_new_message: {
         Args: {
-          p_chat_id: string
           p_user_id: string
+          p_process_id: string
           p_model: string
-          p_process_name: string
           p_message_type: string
           p_role: string
           p_image_paths?: string[]
@@ -1543,16 +1577,16 @@ export interface Database {
           p_tool_call_id?: string
         }
         Returns: {
-          active: boolean
-          chat_id: string
           content: string | null
           created_at: string
           id: string
           image_paths: string[]
+          is_active: boolean
           message_type: string
           model: string
           name: string | null
-          process_name: string
+          on_buffer: boolean
+          process_id: string
           role: string
           sequence_number: number
           tool_call_id: string | null
@@ -1563,10 +1597,9 @@ export interface Database {
       }
       insert_new_ui_message: {
         Args: {
-          p_chat_id: string
           p_user_id: string
+          p_process_id: string
           p_model: string
-          p_process_name: string
           p_message_type: string
           p_role: string
           p_image_paths?: string[]
@@ -1576,16 +1609,16 @@ export interface Database {
           p_tool_call_id?: string
         }
         Returns: {
-          active: boolean
-          chat_id: string
           content: string | null
           created_at: string
           id: string
           image_paths: string[]
+          is_active: boolean
           message_type: string
           model: string
           name: string | null
-          process_name: string
+          on_buffer: boolean
+          process_id: string
           role: string
           sequence_number: number
           tool_call_id: string | null
@@ -1636,10 +1669,9 @@ export interface Database {
       }
       send_message_to_assistant: {
         Args: {
-          p_chat_id: string
           p_user_id: string
+          p_process_id: string
           p_model: string
-          p_process_name: string
           p_message_type: string
           p_role: string
           p_image_paths?: string[]
@@ -1655,10 +1687,9 @@ export interface Database {
       }
       send_message_to_user: {
         Args: {
-          p_chat_id: string
           p_user_id: string
+          p_process_id: string
           p_model: string
-          p_process_name: string
           p_message_type: string
           p_role: string
           p_image_paths?: string[]

@@ -7,8 +7,8 @@ CREATE TABLE IF NOT EXISTS messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
     -- RELATIONSHIPS
-    chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
 
     -- METADATA
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -16,12 +16,12 @@ CREATE TABLE IF NOT EXISTS messages (
 
     -- REQUIRED
     model TEXT NOT NULL CHECK (char_length(model) <= 1000),
-    process_name TEXT NOT NULL CHECK (char_length(process_name) <= 1000),
     message_type TEXT NOT NULL CHECK (char_length(message_type) <= 1000),
     role TEXT NOT NULL CHECK (char_length(role) <= 1000),
     sequence_number INT NOT NULL,
-    active BOOLEAN NOT NULL DEFAULT true,
-    image_paths TEXT[] NOT NULL, -- file paths in message_images bucket
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    on_buffer BOOLEAN NOT NULL DEFAULT true,
+    image_paths TEXT[] NOT NULL, -- file paths in message_images bucket -- Remove, check how to send images to the model properly ---
 
     -- OPTIONAL
     name TEXT,  -- Optional, used only for user and assistant names
@@ -35,31 +35,23 @@ CREATE TABLE IF NOT EXISTS messages (
 
 -- INDEXES --
 
-CREATE INDEX idx_messages_chat_id ON messages (chat_id);
+CREATE INDEX idx_messages_user_id ON messages (user_id);
 
 -- RLS --
 
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow full access to own messages"
-    ON messages
+    ON messages 
     USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
-
-CREATE POLICY "Allow view access to messages for non-private chats"
-    ON messages
-    FOR SELECT
-    USING (chat_id IN (
-        SELECT id FROM chats WHERE sharing <> 'private'
-    ));
 
 -- FUNCTIONS --
 
 CREATE OR REPLACE FUNCTION insert_new_message(
-    p_chat_id UUID,
     p_user_id UUID,
+    p_process_id UUID,
     p_model TEXT,
-    p_process_name TEXT,
     p_message_type TEXT,
     p_role TEXT,
     p_image_paths TEXT[] DEFAULT '{}',
@@ -72,36 +64,36 @@ RETURNS SETOF messages AS $$
 DECLARE
   _sequence_number INT;
 BEGIN
-  SELECT COALESCE(MAX(sequence_number), 0) + 1 INTO _sequence_number FROM messages WHERE chat_id = p_chat_id AND process_name = p_process_name;
+  SELECT COALESCE(MAX(sequence_number), 0) + 1 INTO _sequence_number FROM messages WHERE process_id = p_process_id;
 
   RETURN QUERY INSERT INTO messages (
-      chat_id, 
-      user_id, 
-      model, 
-      process_name, 
-      message_type, 
-      role, 
-      image_paths, 
-      sequence_number, 
-      name, 
-      content, 
-      tool_calls, 
-      tool_call_id, 
-      active
+      user_id,
+      process_id,
+      model,
+      message_type,
+      role,
+      image_paths,
+      sequence_number,
+      name,
+      content,
+      tool_calls,
+      tool_call_id,
+      is_active,
+      on_buffer
   )
   VALUES (
-      p_chat_id, 
-      p_user_id, 
-      p_model, 
-      p_process_name, 
-      p_message_type, 
-      p_role, 
-      p_image_paths, 
-      _sequence_number, 
-      p_name, 
-      p_content, 
-      p_tool_calls, 
-      p_tool_call_id, 
+      p_user_id,
+      p_process_id, 
+      p_model,
+      p_message_type,
+      p_role,
+      p_image_paths,
+      _sequence_number,
+      p_name,
+      p_content,
+      p_tool_calls,
+      p_tool_call_id,
+      TRUE,
       TRUE
   )
   RETURNING *;
@@ -117,15 +109,14 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION get_active_messages(p_chat_id UUID, p_process_name TEXT)
+CREATE OR REPLACE FUNCTION get_active_messages(p_process_id UUID)
 RETURNS TABLE(
     id UUID,
-    chat_id UUID,
     user_id UUID,
+    process_id UUID,
     created_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ,
     model TEXT,
-    process_name TEXT,
     message_type TEXT,
     role TEXT,
     sequence_number INT,
@@ -133,18 +124,18 @@ RETURNS TABLE(
     content TEXT,
     tool_calls JSONB,
     tool_call_id UUID,
-    active BOOLEAN
+    is_active BOOLEAN,
+    on_buffer BOOLEAN
 ) AS $$
 BEGIN
     RETURN QUERY
     SELECT 
         messages.id,
-        messages.chat_id,
         messages.user_id,
+        messages.process_id,
         messages.created_at,
         messages.updated_at,
         messages.model,
-        messages.process_name,
         messages.message_type AS type,
         messages.role,
         messages.sequence_number,
@@ -152,9 +143,53 @@ BEGIN
         messages.content,
         messages.tool_calls,
         messages.tool_call_id,
-        messages.active
+        messages.is_active,
+        messages.on_buffer
     FROM messages
-    WHERE messages.chat_id = p_chat_id AND messages.process_name = p_process_name AND messages.active = TRUE
+    WHERE messages.process_id = p_process_id AND messages.is_active = TRUE
+    ORDER BY messages.sequence_number ASC;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION get_buffered_messages(p_process_id UUID)
+RETURNS TABLE(
+    id UUID,
+    user_id UUID,
+    process_id UUID,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
+    model TEXT,
+    message_type TEXT,
+    role TEXT,
+    sequence_number INT,
+    name TEXT,
+    content TEXT,
+    tool_calls JSONB,
+    tool_call_id UUID,
+    is_active BOOLEAN,
+    on_buffer BOOLEAN
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        messages.id,
+        messages.user_id,
+        messages.process_id,
+        messages.created_at,
+        messages.updated_at,
+        messages.model,
+        messages.message_type AS type,
+        messages.role,
+        messages.sequence_number,
+        messages.name,
+        messages.content,
+        messages.tool_calls,
+        messages.tool_call_id,
+        messages.is_active,
+        messages.on_buffer
+    FROM messages
+    WHERE messages.process_id = p_process_id AND messages.on_buffer = TRUE
     ORDER BY messages.sequence_number ASC;
 END;
 $$ LANGUAGE plpgsql;
@@ -168,8 +203,8 @@ CREATE TABLE IF NOT EXISTS backend_messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
     -- RELATIONSHIPS
-    chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
 
     -- METADATA
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -177,18 +212,18 @@ CREATE TABLE IF NOT EXISTS backend_messages (
 
     -- REQUIRED
     model TEXT NOT NULL CHECK (char_length(model) <= 1000),
-    process_name TEXT NOT NULL CHECK (char_length(process_name) <= 1000),
     message_type TEXT NOT NULL CHECK (char_length(message_type) <= 1000),
     role TEXT NOT NULL CHECK (char_length(role) <= 1000),
     sequence_number INT NOT NULL,
-    active BOOLEAN NOT NULL DEFAULT true,
-    image_paths TEXT[] NOT NULL, -- file paths in message_images bucket
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    on_buffer BOOLEAN NOT NULL DEFAULT true,
+    image_paths TEXT[] NOT NULL, -- file paths in message_images bucket -- Remove, check how to send images to the model properly ---
 
     -- OPTIONAL
     name TEXT,  -- Optional, used only for user and assistant names
     content TEXT,  -- Optional, standard message content
     tool_calls JSONB,  -- For storing structured data related to tool calls
-    tool_call_id TEXT,  -- Optional, used only for ToolResponseMessage
+    tool_call_id TEXT  -- Optional, used only for ToolResponseMessage
 
     -- CONSTRAINTS
     CONSTRAINT check_image_paths_length CHECK (array_length(image_paths, 1) <= 16)
@@ -203,20 +238,12 @@ CREATE POLICY "Allow full access to own messages"
     USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
 
-CREATE POLICY "Allow view access to messages for non-private chats"
-    ON backend_messages
-    FOR SELECT
-    USING (chat_id IN (
-        SELECT id FROM chats WHERE sharing <> 'private'
-    ));
-
 -- FUNCTIONS --
 
 CREATE OR REPLACE FUNCTION send_message_to_user(
-    p_chat_id UUID,
     p_user_id UUID,
+    p_process_id UUID,
     p_model TEXT,
-    p_process_name TEXT,
     p_message_type TEXT,
     p_role TEXT,
     p_image_paths TEXT[] DEFAULT '{}',
@@ -231,10 +258,10 @@ DECLARE
   _id UUID;
   _created_at TIMESTAMPTZ;
 BEGIN
-  SELECT COALESCE(MAX(sequence_number), 0) + 1 INTO _sequence_number FROM backend_messages WHERE chat_id = p_chat_id;
+  SELECT COALESCE(MAX(sequence_number), 0) + 1 INTO _sequence_number FROM backend_messages WHERE process_id = p_process_id;
 
-  INSERT INTO backend_messages (chat_id, user_id, model, process_name, message_type, role, image_paths, sequence_number, name, content, tool_calls, tool_call_id, active)
-  VALUES (p_chat_id, p_user_id, p_model, p_process_name, p_message_type, p_role, p_image_paths, _sequence_number, p_name, p_content, p_tool_calls, p_tool_call_id, TRUE)
+  INSERT INTO backend_messages (user_id, process_id, model, message_type, role, image_paths, sequence_number, name, content, tool_calls, tool_call_id, is_active, on_buffer)
+  VALUES (p_user_id, p_process_id, p_model, p_message_type, p_role, p_image_paths, _sequence_number, p_name, p_content, p_tool_calls, p_tool_call_id, TRUE, TRUE)
   RETURNING id, created_at INTO _id, _created_at;
 
   returned_id := _id;
@@ -252,8 +279,8 @@ CREATE TABLE IF NOT EXISTS frontend_messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
     -- RELATIONSHIPS
-    chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
 
     -- METADATA
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -261,12 +288,12 @@ CREATE TABLE IF NOT EXISTS frontend_messages (
 
     -- REQUIRED
     model TEXT NOT NULL CHECK (char_length(model) <= 1000),
-    process_name TEXT NOT NULL CHECK (char_length(process_name) <= 1000),
     message_type TEXT NOT NULL CHECK (char_length(message_type) <= 1000),
     role TEXT NOT NULL CHECK (char_length(role) <= 1000),
     sequence_number INT NOT NULL,
-    active BOOLEAN NOT NULL DEFAULT true,
-    image_paths TEXT[] NOT NULL, -- file paths in message_images bucket
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    on_buffer BOOLEAN NOT NULL DEFAULT true,
+    image_paths TEXT[] NOT NULL, -- file paths in message_images bucket -- Remove, check how to send images to the model properly ---
 
     -- OPTIONAL
     name TEXT,  -- Optional, used only for user and assistant names
@@ -287,26 +314,18 @@ CREATE POLICY "Allow full access to own messages"
     USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
 
-CREATE POLICY "Allow view access to messages for non-private chats"
-    ON frontend_messages
-    FOR SELECT
-    USING (chat_id IN (
-        SELECT id FROM chats WHERE sharing <> 'private'
-    ));
-
 -- FUNCTIONS --
 CREATE OR REPLACE FUNCTION send_message_to_assistant(
-    p_chat_id UUID,
     p_user_id UUID,
+    p_process_id UUID,
     p_model TEXT,
-    p_process_name TEXT,
     p_message_type TEXT,
     p_role TEXT,
     p_image_paths TEXT[] DEFAULT '{}',
     p_name TEXT DEFAULT NULL,
     p_content TEXT DEFAULT NULL,
     p_tool_calls JSONB DEFAULT NULL,
-    p_tool_call_id UUID DEFAULT NULL
+    p_tool_call_id TEXT DEFAULT NULL
 )
 RETURNS TABLE(returned_id UUID, returned_created_at TIMESTAMPTZ) AS $$
 DECLARE
@@ -314,10 +333,10 @@ DECLARE
   _id UUID;
   _created_at TIMESTAMPTZ;
 BEGIN
-  SELECT COALESCE(MAX(sequence_number), 0) + 1 INTO _sequence_number FROM frontend_messages WHERE chat_id = p_chat_id;
+  SELECT COALESCE(MAX(sequence_number), 0) + 1 INTO _sequence_number FROM frontend_messages WHERE process_id = p_process_id;
 
-  INSERT INTO frontend_messages (chat_id, user_id, model, process_name, message_type, role, image_paths, sequence_number, name, content, tool_calls, tool_call_id, active)
-  VALUES (p_chat_id, p_user_id, p_model, p_process_name, p_message_type, p_role, p_image_paths, _sequence_number, p_name, p_content, p_tool_calls, p_tool_call_id, TRUE)
+  INSERT INTO frontend_messages (user_id, process_id, model, message_type, role, image_paths, sequence_number, name, content, tool_calls, tool_call_id, is_active, on_buffer)
+  VALUES (p_user_id, p_process_id, p_model, p_message_type, p_role, p_image_paths, _sequence_number, p_name, p_content, p_tool_calls, p_tool_call_id, TRUE, TRUE)
   RETURNING id, created_at INTO _id, _created_at;
 
   returned_id := _id;
@@ -335,8 +354,8 @@ CREATE TABLE IF NOT EXISTS ui_messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
     -- RELATIONSHIPS
-    chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
 
     -- METADATA
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -344,12 +363,12 @@ CREATE TABLE IF NOT EXISTS ui_messages (
 
     -- REQUIRED
     model TEXT NOT NULL CHECK (char_length(model) <= 1000),
-    process_name TEXT NOT NULL CHECK (char_length(process_name) <= 1000),
     message_type TEXT NOT NULL CHECK (char_length(message_type) <= 1000),
     role TEXT NOT NULL CHECK (char_length(role) <= 1000),
     sequence_number INT NOT NULL,
-    active BOOLEAN NOT NULL DEFAULT true,
-    image_paths TEXT[] NOT NULL, -- file paths in message_images bucket
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    on_buffer BOOLEAN NOT NULL DEFAULT true,
+    image_paths TEXT[] NOT NULL, -- file paths in message_images bucket -- Remove, check how to send images to the model properly ---
 
     -- OPTIONAL
     name TEXT,  -- Optional, used only for user and assistant names
@@ -363,7 +382,7 @@ CREATE TABLE IF NOT EXISTS ui_messages (
 
 -- INDEXES --
 
-CREATE INDEX idx_ui_messages_chat_id ON ui_messages (chat_id);
+CREATE INDEX idx_ui_messages_user_id ON ui_messages (user_id);
 
 -- RLS --
 
@@ -374,20 +393,12 @@ CREATE POLICY "Allow full access to own ui_messages"
     USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
 
-CREATE POLICY "Allow view access to ui_messages for non-private chats"
-    ON ui_messages
-    FOR SELECT
-    USING (chat_id IN (
-        SELECT id FROM chats WHERE sharing <> 'private'
-    ));
-
 -- FUNCTIONS --
 
 CREATE OR REPLACE FUNCTION insert_new_ui_message(
-    p_chat_id UUID,
     p_user_id UUID,
+    p_process_id UUID,
     p_model TEXT,
-    p_process_name TEXT,
     p_message_type TEXT,
     p_role TEXT,
     p_image_paths TEXT[] DEFAULT '{}',
@@ -400,36 +411,36 @@ RETURNS SETOF ui_messages AS $$
 DECLARE
   _sequence_number INT;
 BEGIN
-  SELECT COALESCE(MAX(sequence_number), 0) + 1 INTO _sequence_number FROM ui_messages WHERE chat_id = p_chat_id;
+  SELECT COALESCE(MAX(sequence_number), 0) + 1 INTO _sequence_number FROM ui_messages WHERE process_id = p_process_id;
 
   RETURN QUERY INSERT INTO ui_messages (
-      chat_id, 
-      user_id, 
-      model, 
-      process_name, 
-      message_type, 
-      role, 
-      image_paths, 
-      sequence_number, 
-      name, 
-      content, 
-      tool_calls, 
-      tool_call_id, 
-      active
+      user_id,
+      process_id,
+      model,
+      message_type,
+      role,
+      image_paths,
+      sequence_number,
+      name,
+      content,
+      tool_calls,
+      tool_call_id,
+      is_active,
+      on_buffer
   )
-  VALUES (
-      p_chat_id, 
-      p_user_id, 
-      p_model, 
-      p_process_name, 
-      p_message_type, 
-      p_role, 
-      p_image_paths, 
-      _sequence_number, 
-      p_name, 
-      p_content, 
-      p_tool_calls, 
-      p_tool_call_id, 
+  VALUES ( 
+      p_user_id,
+      p_process_id,
+      p_model,
+      p_message_type,
+      p_role,
+      p_image_paths,
+      _sequence_number,
+      p_name,
+      p_content,
+      p_tool_calls,
+      p_tool_call_id,
+      TRUE,
       TRUE
   )
   RETURNING *;
@@ -504,15 +515,15 @@ BEGIN
 END;
 $$;
 
+--- TODO: Remove this messages, it should only affect visualization ---
 CREATE OR REPLACE FUNCTION delete_messages_including_and_after(
-    p_user_id UUID, 
-    p_chat_id UUID, 
+    p_user_id UUID,
     p_sequence_number INT
 )
 RETURNS VOID AS $$
 BEGIN
     DELETE FROM ui_messages 
-    WHERE user_id = p_user_id AND chat_id = p_chat_id AND sequence_number >= p_sequence_number;
+    WHERE user_id = p_user_id AND sequence_number >= p_sequence_number;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -536,20 +547,7 @@ INSERT INTO storage.buckets (id, name, public) VALUES ('message_images', 'messag
 
 CREATE POLICY "Allow read access to own message images"
     ON storage.objects FOR SELECT
-    USING (
-        bucket_id = 'message_images' AND 
-        (
-            (storage.foldername(name))[1] = auth.uid()::text OR
-            (
-                EXISTS (
-                    SELECT 1 FROM chats 
-                    WHERE id = (
-                        SELECT chat_id FROM ui_messages WHERE id = (storage.foldername(name))[2]::uuid
-                    ) AND sharing <> 'private'
-                )
-            )
-        )
-    );
+    USING (bucket_id = 'message_images' AND (storage.foldername(name))[1] = auth.uid()::text);
 
 CREATE POLICY "Allow insert access to own message images"
     ON storage.objects FOR INSERT

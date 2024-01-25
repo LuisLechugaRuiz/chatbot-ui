@@ -15,11 +15,11 @@ export const getMessageById = async (messageId: string) => {
   return message
 }
 
-export const getMessagesByChatId = async (chatId: string) => {
+export const getMessagesByProcessId = async (processId: string) => {
   const { data: messages } = await supabase
     .from("ui_messages")
     .select("*")
-    .eq("chat_id", chatId)
+    .eq("process_id", processId)
 
   if (!messages) {
     throw new Error("Messages not found")
@@ -90,12 +90,10 @@ export const deleteMessage = async (messageId: string) => {
 
 export async function deleteMessagesIncludingAndAfter(
   userId: string,
-  chatId: string,
   sequenceNumber: number
 ) {
   const { error } = await supabase.rpc("delete_messages_including_and_after", {
     p_user_id: userId,
-    p_chat_id: chatId,
     p_sequence_number: sequenceNumber
   })
 

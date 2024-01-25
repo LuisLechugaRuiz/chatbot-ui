@@ -15,14 +15,13 @@ $$ language 'plpgsql';
 
 -- Function to delete a message and all following messages
 CREATE OR REPLACE FUNCTION delete_message_including_and_after(
-    p_user_id UUID, 
-    p_chat_id UUID, 
+    p_user_id UUID,
     p_sequence_number INT
 )
 RETURNS VOID AS $$
 BEGIN
     DELETE FROM messages 
-    WHERE user_id = p_user_id AND chat_id = p_chat_id AND sequence_number >= p_sequence_number;
+    WHERE user_id = p_user_id AND sequence_number >= p_sequence_number;
 END;
 $$ LANGUAGE plpgsql;
 

@@ -22,9 +22,11 @@ CREATE TABLE IF NOT EXISTS profiles (
     display_name TEXT NOT NULL CHECK (char_length(display_name) <= 100),
     use_azure_openai BOOLEAN NOT NULL,
     username TEXT NOT NULL UNIQUE CHECK (char_length(username) >= 3 AND char_length(username) <= 25),
-    has_topics BOOLEAN NOT NULL DEFAULT FALSE,
+    assistant_agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+    orchestrator_agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+    initialized BOOLEAN NOT NULL DEFAULT FALSE,
 
-    -- OPTIONAL
+    -- OPTIONAL TODO: REMOVE TO ONLY LEAVE ONE OPTION (AWARE - GENERATE API_KEY FOR EACH NEW USER?)
     anthropic_api_key TEXT CHECK (char_length(anthropic_api_key) <= 1000),
     azure_openai_35_turbo_id TEXT CHECK (char_length(azure_openai_35_turbo_id) <= 1000),
     azure_openai_45_turbo_id TEXT CHECK (char_length(azure_openai_45_turbo_id) <= 1000),
@@ -95,8 +97,12 @@ BEGIN
     -- Generate a random username
     random_username := 'user' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 16);
 
+    -- Initialize assistant and orchestrator agents
+    new_assistant_agent_id := create_agent(NEW.id, 'Assistant');
+    new_orchestrator_agent_id := create_agent(NEW.id, 'Orchestrator');
+
     -- Create a profile for the new user
-    INSERT INTO public.profiles(user_id, anthropic_api_key, azure_openai_35_turbo_id, azure_openai_45_turbo_id, azure_openai_45_vision_id, azure_openai_api_key, azure_openai_endpoint, google_gemini_api_key, has_onboarded, image_url, image_path, mistral_api_key, display_name, bio, openai_api_key, openai_organization_id, perplexity_api_key, profile_context, use_azure_openai, username, has_topics)
+    INSERT INTO public.profiles(user_id, anthropic_api_key, azure_openai_35_turbo_id, azure_openai_45_turbo_id, azure_openai_45_vision_id, azure_openai_api_key, azure_openai_endpoint, google_gemini_api_key, has_onboarded, image_url, image_path, mistral_api_key, display_name, bio, openai_api_key, openai_organization_id, perplexity_api_key, profile_context, use_azure_openai, username, assistant_agent_id, orchestrator_agent_id, initialized)
     VALUES(
         NEW.id,
         '',
@@ -118,10 +124,12 @@ BEGIN
         '',
         FALSE,
         random_username,
+        new_assistant_agent_id,
+        new_orchestrator_agent_id,
         FALSE
     );
 
-    -- Create the home workspace for the new user
+    -- Create the home workspace for the new user --- TODO: REMOVE!! ---
     INSERT INTO public.workspaces(user_id, is_home, name, default_context_length, default_model, default_prompt, default_temperature, description, embeddings_provider, include_profile_context, include_workspace_instructions, instructions)
     VALUES(
         NEW.id,
@@ -137,8 +145,7 @@ BEGIN
         TRUE,
         ''
     );
-    INSERT INTO public.user_profiles(user_id)
-    VALUES(NEW.id);
+
 
     RETURN NEW;
 END;
@@ -175,7 +182,7 @@ CREATE POLICY "Allow authenticated delete access to own profile images"
     USING (bucket_id = 'profile_images' AND (storage.foldername(name))[1] = auth.uid()::text);
 
 
---------------- USER PROFILES ---------------
+--------------- USER PROFILES --------------- TODO: REMOVE!! ----
 
 -- TABLE --
 
