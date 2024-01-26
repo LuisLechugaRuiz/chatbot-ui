@@ -22,8 +22,6 @@ CREATE TABLE IF NOT EXISTS profiles (
     display_name TEXT NOT NULL CHECK (char_length(display_name) <= 100),
     use_azure_openai BOOLEAN NOT NULL,
     username TEXT NOT NULL UNIQUE CHECK (char_length(username) >= 3 AND char_length(username) <= 25),
-    assistant_agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
-    orchestrator_agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
     initialized BOOLEAN NOT NULL DEFAULT FALSE,
 
     -- OPTIONAL TODO: REMOVE TO ONLY LEAVE ONE OPTION (AWARE - GENERATE API_KEY FOR EACH NEW USER?)
@@ -97,12 +95,8 @@ BEGIN
     -- Generate a random username
     random_username := 'user' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 16);
 
-    -- Initialize assistant and orchestrator agents
-    new_assistant_agent_id := create_agent(NEW.id, 'Assistant');
-    new_orchestrator_agent_id := create_agent(NEW.id, 'Orchestrator');
-
     -- Create a profile for the new user
-    INSERT INTO public.profiles(user_id, anthropic_api_key, azure_openai_35_turbo_id, azure_openai_45_turbo_id, azure_openai_45_vision_id, azure_openai_api_key, azure_openai_endpoint, google_gemini_api_key, has_onboarded, image_url, image_path, mistral_api_key, display_name, bio, openai_api_key, openai_organization_id, perplexity_api_key, profile_context, use_azure_openai, username, assistant_agent_id, orchestrator_agent_id, initialized)
+    INSERT INTO public.profiles(user_id, anthropic_api_key, azure_openai_35_turbo_id, azure_openai_45_turbo_id, azure_openai_45_vision_id, azure_openai_api_key, azure_openai_endpoint, google_gemini_api_key, has_onboarded, image_url, image_path, mistral_api_key, display_name, bio, openai_api_key, openai_organization_id, perplexity_api_key, profile_context, use_azure_openai, username, initialized)
     VALUES(
         NEW.id,
         '',
@@ -124,8 +118,6 @@ BEGIN
         '',
         FALSE,
         random_username,
-        new_assistant_agent_id,
-        new_orchestrator_agent_id,
         FALSE
     );
 
@@ -180,41 +172,3 @@ CREATE POLICY "Allow authenticated update access to own profile images"
 CREATE POLICY "Allow authenticated delete access to own profile images"
     ON storage.objects FOR DELETE TO authenticated
     USING (bucket_id = 'profile_images' AND (storage.foldername(name))[1] = auth.uid()::text);
-
-
---------------- USER PROFILES --------------- TODO: REMOVE!! ----
-
--- TABLE --
-
-CREATE TABLE IF NOT EXISTS user_profiles (
-    -- ID
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-
-    -- RELATIONSHIPS
-    user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-
-    -- METADATA
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ,
-
-    -- REQUIRED
-    name TEXT NOT NULL DEFAULT '',
-    basic_information TEXT NOT NULL DEFAULT '',
-    preferences TEXT NOT NULL DEFAULT '',
-    goals_and_priorities TEXT NOT NULL DEFAULT '',
-    habits_and_routines TEXT NOT NULL DEFAULT '',
-    assistant_expected_role TEXT NOT NULL DEFAULT ''
-);
-
--- INDEXES --
-
-CREATE INDEX idx_user_profiles_user_id ON user_profiles (user_id);
-
--- RLS --
-
-ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Allow full access to own profiles"
-    ON user_profiles
-    USING (user_id = auth.uid())
-    WITH CHECK (user_id = auth.uid());

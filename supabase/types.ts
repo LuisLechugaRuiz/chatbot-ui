@@ -37,35 +37,75 @@ export interface Database {
       agents: {
         Row: {
           context: string
+          context_manager_process_id: string | null
           created_at: string
+          data_storage_manager_process_id: string | null
           id: string
+          main_process_id: string | null
           name: string
           profile: Json
           thought: string
+          thought_generator_process_id: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
-          context: string
+          context?: string
+          context_manager_process_id?: string | null
           created_at?: string
+          data_storage_manager_process_id?: string | null
           id?: string
+          main_process_id?: string | null
           name: string
           profile?: Json
-          thought: string
+          thought?: string
+          thought_generator_process_id?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           context?: string
+          context_manager_process_id?: string | null
           created_at?: string
+          data_storage_manager_process_id?: string | null
           id?: string
+          main_process_id?: string | null
           name?: string
           profile?: Json
           thought?: string
+          thought_generator_process_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "agents_context_manager_process_id_fkey"
+            columns: ["context_manager_process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agents_data_storage_manager_process_id_fkey"
+            columns: ["data_storage_manager_process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agents_main_process_id_fkey"
+            columns: ["main_process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agents_thought_generator_process_id_fkey"
+            columns: ["thought_generator_process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "agents_user_id_fkey"
             columns: ["user_id"]
@@ -323,6 +363,7 @@ export interface Database {
           include_workspace_instructions: boolean
           model: string
           name: string
+          process_id: string
           prompt: string
           sharing: string
           temperature: number
@@ -341,6 +382,7 @@ export interface Database {
           include_workspace_instructions: boolean
           model: string
           name: string
+          process_id: string
           prompt: string
           sharing?: string
           temperature: number
@@ -359,6 +401,7 @@ export interface Database {
           include_workspace_instructions?: boolean
           model?: string
           name?: string
+          process_id?: string
           prompt?: string
           sharing?: string
           temperature?: number
@@ -379,6 +422,13 @@ export interface Database {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chats_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
             referencedColumns: ["id"]
           },
           {
@@ -1052,40 +1102,33 @@ export interface Database {
       }
       processes: {
         Row: {
-          agent_id: string
           created_at: string
           id: string
           is_active: boolean
           name: string
+          tools_class: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
-          agent_id: string
           created_at?: string
           id?: string
           is_active?: boolean
           name: string
+          tools_class: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
-          agent_id?: string
           created_at?: string
           id?: string
           is_active?: boolean
           name?: string
+          tools_class?: string
           updated_at?: string | null
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "processes_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "agents"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "processes_user_id_fkey"
             columns: ["user_id"]
@@ -1098,6 +1141,7 @@ export interface Database {
       profiles: {
         Row: {
           anthropic_api_key: string | null
+          assistant_agent_id: string
           azure_openai_35_turbo_id: string | null
           azure_openai_45_turbo_id: string | null
           azure_openai_45_vision_id: string | null
@@ -1108,13 +1152,14 @@ export interface Database {
           display_name: string
           google_gemini_api_key: string | null
           has_onboarded: boolean
-          has_topics: boolean
           id: string
           image_path: string
           image_url: string
+          initialized: boolean
           mistral_api_key: string | null
           openai_api_key: string | null
           openai_organization_id: string | null
+          orchestrator_agent_id: string
           perplexity_api_key: string | null
           profile_context: string
           updated_at: string | null
@@ -1124,6 +1169,7 @@ export interface Database {
         }
         Insert: {
           anthropic_api_key?: string | null
+          assistant_agent_id: string
           azure_openai_35_turbo_id?: string | null
           azure_openai_45_turbo_id?: string | null
           azure_openai_45_vision_id?: string | null
@@ -1134,13 +1180,14 @@ export interface Database {
           display_name: string
           google_gemini_api_key?: string | null
           has_onboarded?: boolean
-          has_topics?: boolean
           id?: string
           image_path: string
           image_url: string
+          initialized?: boolean
           mistral_api_key?: string | null
           openai_api_key?: string | null
           openai_organization_id?: string | null
+          orchestrator_agent_id: string
           perplexity_api_key?: string | null
           profile_context: string
           updated_at?: string | null
@@ -1150,6 +1197,7 @@ export interface Database {
         }
         Update: {
           anthropic_api_key?: string | null
+          assistant_agent_id?: string
           azure_openai_35_turbo_id?: string | null
           azure_openai_45_turbo_id?: string | null
           azure_openai_45_vision_id?: string | null
@@ -1160,13 +1208,14 @@ export interface Database {
           display_name?: string
           google_gemini_api_key?: string | null
           has_onboarded?: boolean
-          has_topics?: boolean
           id?: string
           image_path?: string
           image_url?: string
+          initialized?: boolean
           mistral_api_key?: string | null
           openai_api_key?: string | null
           openai_organization_id?: string | null
+          orchestrator_agent_id?: string
           perplexity_api_key?: string | null
           profile_context?: string
           updated_at?: string | null
@@ -1175,6 +1224,20 @@ export interface Database {
           username?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_assistant_agent_id_fkey"
+            columns: ["assistant_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_orchestrator_agent_id_fkey"
+            columns: ["orchestrator_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_user_id_fkey"
             columns: ["user_id"]
@@ -1505,6 +1568,13 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
+      create_agent: {
+        Args: {
+          user_id: string
+          tools_class: string
+        }
+        Returns: string
+      }
       create_duplicate_messages_for_new_chat: {
         Args: {
           old_chat_id: string
@@ -1542,6 +1612,28 @@ export interface Database {
         Returns: Record<string, unknown>
       }
       get_active_messages: {
+        Args: {
+          p_process_id: string
+        }
+        Returns: {
+          id: string
+          user_id: string
+          process_id: string
+          created_at: string
+          updated_at: string
+          model: string
+          message_type: string
+          role: string
+          sequence_number: number
+          name: string
+          content: string
+          tool_calls: Json
+          tool_call_id: string
+          is_active: boolean
+          on_buffer: boolean
+        }[]
+      }
+      get_buffered_messages: {
         Args: {
           p_process_id: string
         }

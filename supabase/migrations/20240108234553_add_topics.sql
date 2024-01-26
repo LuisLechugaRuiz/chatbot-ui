@@ -28,7 +28,7 @@ CREATE INDEX topic_id_idx ON topics(user_id);
 ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow full access to own topics"
-    ON profiles
+    ON topics
     USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
 

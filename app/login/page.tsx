@@ -70,6 +70,7 @@ export default async function Login({
     })
 
     if (error) {
+      console.error("Error signing up:", error)
       return redirect("/login?message=Could not authenticate user")
     }
 

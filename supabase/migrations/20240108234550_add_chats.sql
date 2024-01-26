@@ -1,6 +1,6 @@
 --------------- CHATS ---------------
 
---- TODO: REMOVE ---
+--- TODO: REFACTOR!! ---
 
 -- TABLE --
 
@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS chats (
 
     -- REQUIRED RELATIONSHIPS
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     
     -- OPTIONAL RELATIONSHIPS
