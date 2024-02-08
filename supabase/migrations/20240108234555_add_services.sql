@@ -16,8 +16,7 @@ CREATE TABLE IF NOT EXISTS services (
 
     -- REQUIRED
     name TEXT NOT NULL CHECK (char_length(name) <= 100),
-    description TEXT NOT NULL CHECK (char_length(description) <= 100000),
-    prompt_prefix TEXT NOT NULL CHECK (char_length(prompt_prefix) <= 100000)
+    description TEXT NOT NULL CHECK (char_length(description) <= 100000)
 );
 
 -- INDEXES --
@@ -47,7 +46,6 @@ CREATE OR REPLACE FUNCTION create_service(
     p_tool_class TEXT,
     p_name TEXT,
     p_description TEXT,
-    p_prompt_prefix TEXT
 )
 RETURNS TABLE(returned_id UUID, returned_process_id UUID) AS $$
 DECLARE
@@ -78,8 +76,8 @@ BEGIN
     END IF;
 
     -- Insert the new service into the services table and return the new id
-    INSERT INTO services (user_id, process_id, name, description, prompt_prefix)
-    VALUES (p_user_id, _process_id, p_name, p_description, p_prompt_prefix)
+    INSERT INTO services (user_id, process_id, name, description)
+    VALUES (p_user_id, _process_id, p_name, p_description)
     RETURNING id INTO _id;
 
     returned_id := _id;

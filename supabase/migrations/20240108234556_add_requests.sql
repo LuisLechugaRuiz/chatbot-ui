@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS requests (
     -- RELATIONSHIPS
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     service_id UUID NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+    service_process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
     client_process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
 
     -- METADATA
@@ -16,7 +17,6 @@ CREATE TABLE IF NOT EXISTS requests (
     updated_at TIMESTAMPTZ,
 
     -- REQUIRED
-    prompt_prefix TEXT NOT NULL CHECK (char_length(prompt_prefix) <= 100000),
     query TEXT NOT NULL CHECK (char_length(query) <= 100000),
     is_async BOOLEAN NOT NULL,
     feedback TEXT NOT NULL DEFAULT ''::text CHECK (char_length(feedback) <= 100000),
@@ -56,10 +56,10 @@ CREATE OR REPLACE FUNCTION create_request(
 RETURNS SETOF requests AS $$
 DECLARE
     _service_id UUID;
-    _prompt_prefix TEXT;
+    _service_process_id UUID;
 BEGIN
     -- Find the service_id by matching service_name for the given user_id
-    SELECT id, prompt_prefix INTO _service_id, _prompt_prefix
+    SELECT id, process_id INTO _service_id, _service_process_id
     FROM services
     WHERE user_id = p_user_id AND name = p_service_name
     LIMIT 1;
@@ -71,8 +71,8 @@ BEGIN
 
     -- Insert a new request into the requests table and return the entire row
     RETURN QUERY
-    INSERT INTO requests (user_id, service_id, client_process_id, prompt_prefix, query, is_async, feedback, status, response)
-    VALUES (p_user_id, _service_id, p_client_process_id, _prompt_prefix, p_query, p_is_async, '', 'pending', '')
+    INSERT INTO requests (user_id, service_id, service_process_id, client_process_id, query, is_async, feedback, status, response)
+    VALUES (p_user_id, _service_id, _service_process_id, p_client_process_id, p_query, p_is_async, '', 'pending', '')
     RETURNING *;
 END;
 $$ LANGUAGE plpgsql;

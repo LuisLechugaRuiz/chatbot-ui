@@ -15,9 +15,12 @@ CREATE TABLE IF NOT EXISTS processes (
     updated_at TIMESTAMPTZ,
 
     -- REQUIRED
-    module_name TEXT NOT NULL CHECK (char_length(module_name) <= 100),
     name TEXT NOT NULL CHECK (char_length(name) <= 100),
     tools_class TEXT NOT NULL CHECK (char_length(tools_class) <= 100),
+    identity TEXT NOT NULL CHECK (char_length(identity) <= 10000),
+    task TEXT NOT NULL CHECK (char_length(task) <= 10000),
+    instructions TEXT NOT NULL CHECK (char_length(instructions) <= 10000),
+
     is_active BOOLEAN NOT NULL DEFAULT FALSE
 );
 
@@ -40,3 +43,6 @@ CREATE TRIGGER update_processes_updated_at
 BEFORE UPDATE ON processes
 FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
+
+-- FUNCTIONS --
+add_subscription('processes', 'user_id')
