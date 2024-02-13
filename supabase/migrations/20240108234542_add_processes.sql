@@ -43,6 +43,3 @@ CREATE TRIGGER update_processes_updated_at
 BEFORE UPDATE ON processes
 FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
-
--- FUNCTIONS --
-add_subscription('processes', 'user_id')

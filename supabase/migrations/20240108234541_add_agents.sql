@@ -19,9 +19,9 @@ CREATE TABLE IF NOT EXISTS agents (
     identity TEXT NOT NULL CHECK (char_length(identity) <= 10000),
     task TEXT NOT NULL CHECK (char_length(task) <= 10000),
     instructions TEXT NOT NULL CHECK (char_length(instructions) <= 100000),
-    state TEXT NOT NULL DEFAULT 'idle'::text CHECK (status = ANY (ARRAY['idle'::text, 'main_process'::text, 'thought_generator'::text])),
-    thought_generator_mode TEXT NOT NULL DEFAULT 'post'::text CHECK (status = ANY (ARRAY['pre'::text, 'parallel'::text, 'post'::text])),
-    context TEXT NOT NULL DEFAULT '',
+    state TEXT NOT NULL DEFAULT 'idle'::text CHECK (state = ANY (ARRAY['idle'::text, 'main_process'::text, 'thought_generator'::text])),
+    thought_generator_mode TEXT NOT NULL DEFAULT 'post'::text CHECK (thought_generator_mode = ANY (ARRAY['pre'::text, 'parallel'::text, 'post'::text])),
+    context TEXT NOT NULL DEFAULT ''
 );
 
 -- INDEXES --

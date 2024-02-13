@@ -15,13 +15,12 @@ CREATE TABLE IF NOT EXISTS events (
 
     -- REQUIRED
     name TEXT NOT NULL CHECK (char_length(name) <= 100000),
-    content TEXT NOT NULL CHECK (char_length(content) <= 100000),
-    subscribed_processes_id UUID[] NOT NULL,
+    content TEXT NOT NULL CHECK (char_length(content) <= 100000)
 );
 
 -- INDEXES --
 
-CREATE INDEX requests_id_idx ON events(user_id);
+CREATE INDEX events_id_idx ON events(user_id);
 
 -- RLS --
 
@@ -48,10 +47,24 @@ CREATE TABLE IF NOT EXISTS subscribed_events (
     PRIMARY KEY (user_id, process_id, event_name)
 );
 
+-- RLS --
+
+ALTER TABLE subscribed_events ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow full access to own subscribed_events"
+    ON subscribed_events
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+
+-- FUNCTIONS --
+
+ALTER TABLE subscribed_events
+ADD CONSTRAINT subscribed_events_unique_constraint UNIQUE (user_id, process_id, event_name);
+
 CREATE OR REPLACE FUNCTION create_event_subscription(p_user_id UUID, p_process_id UUID, p_event_name TEXT) RETURNS void AS $$
 BEGIN
     INSERT INTO subscribed_events (user_id, process_id, event_name)
     VALUES (p_user_id, p_process_id, p_event_name)
-    ON CONFLICT (p_user_id, process_id, event_name) DO NOTHING; -- Avoid duplicate entries
+    ON CONFLICT (user_id, process_id, event_name) DO NOTHING; -- Avoid duplicate entries
 END;
 $$ LANGUAGE plpgsql;

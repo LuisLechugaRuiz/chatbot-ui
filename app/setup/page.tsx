@@ -151,7 +151,7 @@ export default function SetupPage() {
           <StepContainer
             stepDescription="Let's create your profile."
             stepNum={currentStep}
-            stepTitle="Welcome to Chatbot UI"
+            stepTitle="Welcome to Aware"
             onShouldProceed={handleShouldProceed}
             showNextButton={!!(displayName && username && usernameAvailable)}
             showBackButton={false}

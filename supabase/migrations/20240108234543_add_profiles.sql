@@ -22,7 +22,6 @@ CREATE TABLE IF NOT EXISTS profiles (
     display_name TEXT NOT NULL CHECK (char_length(display_name) <= 100),
     use_azure_openai BOOLEAN NOT NULL,
     username TEXT NOT NULL UNIQUE CHECK (char_length(username) >= 3 AND char_length(username) <= 25),
-    initialized BOOLEAN NOT NULL DEFAULT FALSE,
 
     -- OPTIONAL TODO: REMOVE TO ONLY LEAVE ONE OPTION (AWARE - GENERATE API_KEY FOR EACH NEW USER?)
     anthropic_api_key TEXT CHECK (char_length(anthropic_api_key) <= 1000),
@@ -96,7 +95,7 @@ BEGIN
     random_username := 'user' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 16);
 
     -- Create a profile for the new user
-    INSERT INTO public.profiles(user_id, anthropic_api_key, azure_openai_35_turbo_id, azure_openai_45_turbo_id, azure_openai_45_vision_id, azure_openai_api_key, azure_openai_endpoint, google_gemini_api_key, has_onboarded, image_url, image_path, mistral_api_key, display_name, bio, openai_api_key, openai_organization_id, perplexity_api_key, profile_context, use_azure_openai, username, initialized)
+    INSERT INTO public.profiles(user_id, anthropic_api_key, azure_openai_35_turbo_id, azure_openai_45_turbo_id, azure_openai_45_vision_id, azure_openai_api_key, azure_openai_endpoint, google_gemini_api_key, has_onboarded, image_url, image_path, mistral_api_key, display_name, bio, openai_api_key, openai_organization_id, perplexity_api_key, profile_context, use_azure_openai, username)
     VALUES(
         NEW.id,
         '',
@@ -117,8 +116,7 @@ BEGIN
         '',
         '',
         FALSE,
-        random_username,
-        FALSE
+        random_username
     );
 
     -- Create the home workspace for the new user --- TODO: REMOVE!! ---

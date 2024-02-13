@@ -43,45 +43,29 @@ EXECUTE PROCEDURE update_updated_at_column();
 
 CREATE OR REPLACE FUNCTION create_service(
     p_user_id UUID,
-    p_tool_class TEXT,
+    p_process_id UUID,
     p_name TEXT,
-    p_description TEXT,
+    p_description TEXT
 )
-RETURNS TABLE(returned_id UUID, returned_process_id UUID) AS $$
+RETURNS UUID AS $$
 DECLARE
-    _process_id UUID;
     _id UUID;
 BEGIN
-    -- Check if a service with the same name already exists for the user
-    SELECT id, process_id INTO _id, _process_id
+    -- Check if a service with the same name and process_id already exists for the user
+    SELECT id INTO _id
     FROM services
-    WHERE user_id = p_user_id AND name = p_name;
+    WHERE user_id = p_user_id AND process_id = p_process_id AND name = p_name;
 
-    -- If a service with the same name exists, return the id and process_id without creating a new one
+    -- If a service with the same name exists, return its id without creating a new one
     IF FOUND THEN
-        returned_id := _id;
-        returned_process_id := _process_id;
-        RETURN NEXT;
-    END IF;
-
-    -- If no existing service is found, find the process_id from the processes table
-    SELECT process_id INTO _process_id
-    FROM processes
-    WHERE user_id = p_user_id AND tool_class = p_tool_class
-    LIMIT 1;
-
-    -- Check if a process_id was found
-    IF _process_id IS NULL THEN
-        RAISE EXCEPTION 'Process with user_id % and tool_class % not found.', p_user_id, p_tool_class;
+        RETURN _id;  -- Return the existing service id directly
     END IF;
 
     -- Insert the new service into the services table and return the new id
     INSERT INTO services (user_id, process_id, name, description)
-    VALUES (p_user_id, _process_id, p_name, p_description)
+    VALUES (p_user_id, p_process_id, p_name, p_description)
     RETURNING id INTO _id;
 
-    returned_id := _id;
-    returned_process_id := _process_id;
-    RETURN NEXT;
+    RETURN _id;  -- Return the new service id
 END;
 $$ LANGUAGE plpgsql;

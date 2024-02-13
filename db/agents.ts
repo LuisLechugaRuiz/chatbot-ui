@@ -1,15 +1,16 @@
 import { supabase } from "@/lib/supabase/browser-client"
 
-export const getAgentById = async (agentId: string) => {
-  const { data: agent, error } = await supabase
-    .from("agents")
+export const getAssistantProcessById = async (userId: string) => {
+  const { data: process, error } = await supabase
+    .from("processes")
     .select("*")
-    .eq("id", agentId)
+    .eq("user_id", userId)
+    .eq("tools_class", "Assistant")
     .single()
 
-  if (!agent) {
+  if (!process) {
     throw new Error(error.message)
   }
 
-  return agent
+  return process
 }

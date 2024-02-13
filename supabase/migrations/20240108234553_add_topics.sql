@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS topics (
 
     -- REQUIRED
     name TEXT NOT NULL CHECK (char_length(name) <= 100),
-    content TEXT NOT NULL CHECK (char_length(content) <= 100000),
-    description TEXT NOT NULL CHECK (char_length(description) <= 100000)
+    description TEXT NOT NULL CHECK (char_length(description) <= 100000),
+    content TEXT DEFAULT ''::text
 );
 
 -- INDEXES --
@@ -59,24 +59,48 @@ EXECUTE PROCEDURE update_updated_at_column();
 --------------- SUBSCRIBED TOPICS ---------------
 
 CREATE TABLE IF NOT EXISTS subscribed_topics (
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
     topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
-    PRIMARY KEY (process_id, topic_id)
+    PRIMARY KEY (user_id, process_id, topic_id)
 );
 
-CREATE OR REPLACE FUNCTION create_topic_subscription(p_process_id UUID, p_topic_name TEXT) RETURNS void AS $$
+-- RLS --
+
+ALTER TABLE subscribed_topics ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow full access to own subscribed_topics"
+    ON subscribed_topics
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+
+CREATE OR REPLACE FUNCTION create_topic_subscription(p_process_id UUID, p_topic_name TEXT)
+RETURNS TABLE(returned_user_id UUID, returned_topic_id UUID) AS $$
 DECLARE
+    _user_id UUID;
     _topic_id UUID;
 BEGIN
     -- Retrieve the topic_id based on topic_name
-    SELECT id INTO _topic_id FROM topics WHERE name = p_topic_name LIMIT 1;
+    SELECT id, user_id INTO _topic_id, _user_id FROM topics WHERE name = p_topic_name LIMIT 1;
 
     -- Check if a topic with the given name exists
     IF _topic_id IS NOT NULL THEN
-        -- Insert the subscription using the found topic_id
-        INSERT INTO subscribed_topics (process_id, topic_id)
-        VALUES (p_process_id, _topic_id)
-        ON CONFLICT (process_id, topic_id) DO NOTHING; -- Avoid duplicate entries
+        -- Attempt to insert the subscription and capture the subscription ID
+        BEGIN
+            INSERT INTO subscribed_topics (user_id, process_id, topic_id)
+            VALUES (_user_id, p_process_id, _topic_id)
+            ON CONFLICT (user_id, process_id, topic_id) DO NOTHING;
+
+            -- Set the return values if the subscription was successfully inserted
+            returned_user_id := _user_id;
+            returned_topic_id := _topic_id;
+            RETURN NEXT;
+        EXCEPTION WHEN unique_violation THEN
+            -- Handle the case where the subscription already exists
+            returned_user_id := _user_id;
+            returned_topic_id := _topic_id;
+            RETURN NEXT;
+        END;
     ELSE
         -- Optionally, handle the case where the topic does not exist
         RAISE EXCEPTION 'Topic with name % does not exist.', p_topic_name;

@@ -1,6 +1,6 @@
 // Only used in use-chat-handler.tsx to keep it clean
 
-import { getAgentById } from "@/db/agents"
+import { getAssistantProcessById } from "@/db/agents"
 import { createChatFiles } from "@/db/chat-files"
 import { createChat } from "@/db/chats"
 import { createMessageFileItems } from "@/db/message-file-items"
@@ -338,11 +338,11 @@ export const handleCreateChat = async (
   setChats: React.Dispatch<React.SetStateAction<Tables<"chats">[]>>,
   setChatFiles: React.Dispatch<React.SetStateAction<ChatFile[]>>
 ) => {
-  const assistant_agent = await getAgentById(profile.assistant_agent_id)
+  const assistant_main_process = await getAssistantProcessById(profile.user_id)
 
   const createdChat = await createChat({
     user_id: profile.user_id,
-    process_id: assistant_agent.main_process_id,
+    process_id: assistant_main_process.id,
     workspace_id: selectedWorkspace.id,
     assistant_id: selectedAssistant?.id || null,
     context_length: chatSettings.contextLength,
