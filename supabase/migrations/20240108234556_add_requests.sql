@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS requests (
     service_id UUID NOT NULL REFERENCES services(id) ON DELETE CASCADE,
     service_process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
     client_process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
+    client_process_name TEXT NOT NULL CHECK (char_length(client_process_name) <= 1000),
 
     -- METADATA
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -20,7 +21,7 @@ CREATE TABLE IF NOT EXISTS requests (
     query TEXT NOT NULL CHECK (char_length(query) <= 100000),
     is_async BOOLEAN NOT NULL,
     feedback TEXT NOT NULL DEFAULT ''::text CHECK (char_length(feedback) <= 100000),
-    status TEXT NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'completed'::text])),
+    status TEXT NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'success'::text, 'failure'::text, 'waiting_user_feedback'::text])),
     response TEXT NOT NULL DEFAULT ''::text CHECK (char_length(response) <= 100000)
 );
 
@@ -49,6 +50,7 @@ EXECUTE PROCEDURE update_updated_at_column();
 CREATE OR REPLACE FUNCTION create_request(
     p_user_id UUID,
     p_client_process_id UUID,
+    p_client_process_name TEXT,
     p_service_name TEXT,
     p_query TEXT,
     p_is_async BOOLEAN
@@ -71,8 +73,8 @@ BEGIN
 
     -- Insert a new request into the requests table and return the entire row
     RETURN QUERY
-    INSERT INTO requests (user_id, service_id, service_process_id, client_process_id, query, is_async, feedback, status, response)
-    VALUES (p_user_id, _service_id, _service_process_id, p_client_process_id, p_query, p_is_async, '', 'pending', '')
+    INSERT INTO requests (user_id, service_id, service_process_id, client_process_id, client_process_name, query, is_async, feedback, status, response)
+    VALUES (p_user_id, _service_id, _service_process_id, p_client_process_id, p_client_process_name, p_query, p_is_async, '', 'pending', '')
     RETURNING *;
 END;
 $$ LANGUAGE plpgsql;

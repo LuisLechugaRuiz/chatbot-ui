@@ -559,32 +559,80 @@ export interface Database {
           }
         ]
       }
-      events: {
+      event_types: {
         Row: {
-          content: string
           created_at: string
+          description: string
           id: string
           name: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
-          content: string
           created_at?: string
+          description: string
           id?: string
           name: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
-          content?: string
           created_at?: string
+          description?: string
           id?: string
           name?: string
           updated_at?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "event_types_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      events: {
+        Row: {
+          content: string
+          created_at: string
+          event_type_id: string
+          id: string
+          message_name: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          event_type_id: string
+          id?: string
+          message_name: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          event_type_id?: string
+          id?: string
+          message_name?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_event_type_id_fkey"
+            columns: ["event_type_id"]
+            isOneToOne: false
+            referencedRelation: "event_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "events_user_id_fkey"
             columns: ["user_id"]
@@ -1347,6 +1395,7 @@ export interface Database {
       requests: {
         Row: {
           client_process_id: string
+          client_process_name: string
           created_at: string
           feedback: string
           id: string
@@ -1361,6 +1410,7 @@ export interface Database {
         }
         Insert: {
           client_process_id: string
+          client_process_name: string
           created_at?: string
           feedback?: string
           id?: string
@@ -1375,6 +1425,7 @@ export interface Database {
         }
         Update: {
           client_process_id?: string
+          client_process_name?: string
           created_at?: string
           feedback?: string
           id?: string
@@ -1465,21 +1516,28 @@ export interface Database {
       }
       subscribed_events: {
         Row: {
-          event_name: string
+          event_type_id: string
           process_id: string
           user_id: string
         }
         Insert: {
-          event_name: string
+          event_type_id: string
           process_id: string
           user_id: string
         }
         Update: {
-          event_name?: string
+          event_type_id?: string
           process_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "subscribed_events_event_type_id_fkey"
+            columns: ["event_type_id"]
+            isOneToOne: false
+            referencedRelation: "event_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "subscribed_events_process_id_fkey"
             columns: ["process_id"]
@@ -1724,24 +1782,46 @@ export interface Database {
         }
         Returns: undefined
       }
-      create_event_subscription: {
+      create_event: {
         Args: {
           p_user_id: string
+          p_event_name: string
+          p_message_name: string
+          p_content: string
+        }
+        Returns: {
+          content: string
+          created_at: string
+          event_type_id: string
+          id: string
+          message_name: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }[]
+      }
+      create_event_subscription: {
+        Args: {
           p_process_id: string
           p_event_name: string
         }
-        Returns: undefined
+        Returns: {
+          returned_user_id: string
+          returned_event_type_id: string
+        }[]
       }
       create_request: {
         Args: {
           p_user_id: string
           p_client_process_id: string
+          p_client_process_name: string
           p_service_name: string
           p_query: string
           p_is_async: boolean
         }
         Returns: {
           client_process_id: string
+          client_process_name: string
           created_at: string
           feedback: string
           id: string
@@ -1846,15 +1926,27 @@ export interface Database {
           on_buffer: boolean
         }[]
       }
-      get_subscribed_data: {
+      get_event_subscriptions: {
+        Args: {
+          p_process_id: string
+        }
+        Returns: {
+          event_id: string
+          name: string
+          content: string
+          status: string
+          updated_at: string
+        }[]
+      }
+      get_topic_subscriptions: {
         Args: {
           p_process_id: string
         }
         Returns: {
           topic_id: string
           name: string
-          content: string
           description: string
+          content: string
           updated_at: string
         }[]
       }

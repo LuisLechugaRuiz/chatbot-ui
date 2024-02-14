@@ -108,11 +108,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION get_subscribed_data(p_process_id UUID) 
-RETURNS TABLE (topic_id UUID, name TEXT, content TEXT, description TEXT, updated_at TIMESTAMPTZ) AS $$
+CREATE OR REPLACE FUNCTION get_topic_subscriptions(p_process_id UUID) 
+RETURNS TABLE (topic_id UUID, name TEXT, description TEXT, content TEXT, updated_at TIMESTAMPTZ) AS $$
 BEGIN
     RETURN QUERY
-    SELECT t.id, t.name, t.content, t.description, t.updated_at
+    SELECT t.id, t.name, t.description, t.content, t.updated_at
     FROM subscribed_topics st
     JOIN topics t ON st.topic_id = t.id
     WHERE st.process_id = p_process_id;
