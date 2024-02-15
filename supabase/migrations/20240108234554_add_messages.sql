@@ -104,7 +104,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION soft_delete_message(p_message_id UUID)
 RETURNS VOID AS $$
 BEGIN
-  UPDATE messages SET active = FALSE WHERE id = p_message_id;
+  UPDATE messages SET is_active = FALSE WHERE id = p_message_id;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -123,7 +123,7 @@ RETURNS TABLE(
     name TEXT,
     content TEXT,
     tool_calls JSONB,
-    tool_call_id UUID,
+    tool_call_id TEXT,
     is_active BOOLEAN,
     on_buffer BOOLEAN
 ) AS $$
@@ -166,7 +166,7 @@ RETURNS TABLE(
     name TEXT,
     content TEXT,
     tool_calls JSONB,
-    tool_call_id UUID,
+    tool_call_id TEXT,
     is_active BOOLEAN,
     on_buffer BOOLEAN
 ) AS $$
@@ -191,6 +191,13 @@ BEGIN
     FROM messages
     WHERE messages.process_id = p_process_id AND messages.on_buffer = TRUE
     ORDER BY messages.sequence_number ASC;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION clear_conversation_buffer(p_process_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE messages SET on_buffer = FALSE WHERE process_id = p_process_id;
 END;
 $$ LANGUAGE plpgsql;
 

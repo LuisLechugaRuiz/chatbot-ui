@@ -90,15 +90,16 @@ export const useChatHandler = () => {
     chatMessages: ChatMessage[]
   ) => {
     try {
+      console.log("Sending message:", messageContent)
       setIsGenerating(true)
-
+      console.log("Debug 1")
       const newAbortController = new AbortController()
       setAbortController(newAbortController)
-
+      console.log("Debug 2")
       const modelData = [...LLM_LIST, ...availableLocalModels].find(
         llm => llm.modelId === chatSettings?.model
       )
-
+      console.log("Debug 3")
       let currentChat = selectedChat ? { ...selectedChat } : null
       if (!currentChat) {
         currentChat = await handleCreateChat(
@@ -114,11 +115,14 @@ export const useChatHandler = () => {
         )
         console.log("Creating chat:", currentChat)
       }
+      console.log("Debug 4")
 
       if (!currentChat) {
+        console.log("Creating chat failed")
         throw new Error("Chat not found")
       }
 
+      console.log("Handling user message")
       setUserInput("")
       await handleUserMessage(
         chatMessages,

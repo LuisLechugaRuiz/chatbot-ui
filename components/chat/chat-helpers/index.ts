@@ -338,8 +338,9 @@ export const handleCreateChat = async (
   setChats: React.Dispatch<React.SetStateAction<Tables<"chats">[]>>,
   setChatFiles: React.Dispatch<React.SetStateAction<ChatFile[]>>
 ) => {
+  console.log("Creating chat")
   const assistant_main_process = await getAssistantProcessById(profile.user_id)
-
+  console.log("Assistant main process:", assistant_main_process)
   const createdChat = await createChat({
     user_id: profile.user_id,
     process_id: assistant_main_process.id,
@@ -354,7 +355,7 @@ export const handleCreateChat = async (
     temperature: chatSettings.temperature,
     embeddings_provider: chatSettings.embeddingsProvider
   })
-
+  console.log("Created chat:", createdChat)
   setSelectedChat(createdChat)
   setChats(chats => [createdChat, ...chats])
 
@@ -367,7 +368,7 @@ export const handleCreateChat = async (
   )
 
   setChatFiles(prev => [...prev, ...newMessageFiles])
-
+  console.log("Chat files created")
   return createdChat
 }
 
@@ -380,6 +381,7 @@ export const handleUserMessage = async (
   newMessageImages: MessageImage[],
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
 ) => {
+  console.log("Handling user message")
   // Send message to the assistant
   const userSupabaseClient = new UserSupabaseClient()
 

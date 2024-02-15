@@ -39,7 +39,6 @@ export interface Database {
           context: string
           created_at: string
           id: string
-          identity: string
           instructions: string
           is_active: boolean
           name: string
@@ -54,7 +53,6 @@ export interface Database {
           context?: string
           created_at?: string
           id?: string
-          identity: string
           instructions: string
           is_active?: boolean
           name: string
@@ -69,7 +67,6 @@ export interface Database {
           context?: string
           created_at?: string
           id?: string
-          identity?: string
           instructions?: string
           is_active?: boolean
           name?: string
@@ -1162,8 +1159,8 @@ export interface Database {
         Row: {
           agent_id: string | null
           created_at: string
+          flow_type: string
           id: string
-          identity: string
           instructions: string
           name: string
           task: string
@@ -1174,8 +1171,8 @@ export interface Database {
         Insert: {
           agent_id?: string | null
           created_at?: string
+          flow_type?: string
           id?: string
-          identity: string
           instructions: string
           name: string
           task: string
@@ -1186,8 +1183,8 @@ export interface Database {
         Update: {
           agent_id?: string | null
           created_at?: string
+          flow_type?: string
           id?: string
-          identity?: string
           instructions?: string
           name?: string
           task?: string
@@ -1809,6 +1806,12 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
+      clear_conversation_buffer: {
+        Args: {
+          p_process_id: string
+        }
+        Returns: undefined
+      }
       create_duplicate_messages_for_new_chat: {
         Args: {
           old_chat_id: string

@@ -16,7 +16,6 @@ CREATE TABLE IF NOT EXISTS agents (
     -- REQUIRED
     name TEXT NOT NULL CHECK (char_length(name) <= 100),
     tools_class TEXT NOT NULL CHECK (char_length(tools_class) <= 100),
-    identity TEXT NOT NULL CHECK (char_length(identity) <= 10000),
     task TEXT NOT NULL CHECK (char_length(task) <= 10000),
     instructions TEXT NOT NULL CHECK (char_length(instructions) <= 100000),
     state TEXT NOT NULL DEFAULT 'idle'::text CHECK (state = ANY (ARRAY['idle'::text, 'main_process'::text, 'thought_generator'::text])),
