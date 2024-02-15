@@ -233,10 +233,7 @@ CREATE TABLE IF NOT EXISTS backend_messages (
 
 ALTER TABLE backend_messages ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow full access to own messages"
-    ON backend_messages
-    USING (user_id = auth.uid())
-    WITH CHECK (user_id = auth.uid());
+create policy "Allow select for anon" on backend_messages for select using (true);
 
 -- FUNCTIONS --
 

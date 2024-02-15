@@ -14,7 +14,7 @@ export class SupabaseRealTimeManager {
   }
 
   private initializeRealTimeListener() {
-    // Set up your real-time listener here
+    console.log("Initializing real time listener")
     supabase
       .channel("schema-db-changes")
       .on(
@@ -25,7 +25,9 @@ export class SupabaseRealTimeManager {
           table: "backend_messages"
         },
         payload => {
+          console.log("Received payload", payload)
           if (this.onMessageCallback && payload.new) {
+            console.log("Received new message", payload.new.content)
             this.onMessageCallback(payload.new.content)
           }
         }

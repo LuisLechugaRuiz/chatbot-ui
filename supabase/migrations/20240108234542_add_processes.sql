@@ -19,9 +19,7 @@ CREATE TABLE IF NOT EXISTS processes (
     tools_class TEXT NOT NULL CHECK (char_length(tools_class) <= 100),
     identity TEXT NOT NULL CHECK (char_length(identity) <= 10000),
     task TEXT NOT NULL CHECK (char_length(task) <= 10000),
-    instructions TEXT NOT NULL CHECK (char_length(instructions) <= 10000),
-
-    is_active BOOLEAN NOT NULL DEFAULT FALSE
+    instructions TEXT NOT NULL CHECK (char_length(instructions) <= 10000)
 );
 
 -- INDEXES --

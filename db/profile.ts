@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert, TablesUpdate } from "@/supabase/types"
+import { Tables, TablesInsert, TablesUpdate } from "@/supabase/types"
 
 export const getProfileByUserId = async (userId: string) => {
   const { data: profile, error } = await supabase
@@ -68,4 +68,18 @@ export const deleteProfile = async (profileId: string) => {
   }
 
   return true
+}
+
+export const createUserData = async (user_data: TablesInsert<"users_data">) => {
+  const { data: createdUserData, error } = await supabase
+    .from("users_data")
+    .insert([user_data])
+    .select("*")
+    .single()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return createdUserData
 }

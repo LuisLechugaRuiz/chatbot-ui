@@ -21,7 +21,9 @@ CREATE TABLE IF NOT EXISTS agents (
     instructions TEXT NOT NULL CHECK (char_length(instructions) <= 100000),
     state TEXT NOT NULL DEFAULT 'idle'::text CHECK (state = ANY (ARRAY['idle'::text, 'main_process'::text, 'thought_generator'::text])),
     thought_generator_mode TEXT NOT NULL DEFAULT 'post'::text CHECK (thought_generator_mode = ANY (ARRAY['pre'::text, 'parallel'::text, 'post'::text])),
-    context TEXT NOT NULL DEFAULT ''
+    context TEXT NOT NULL DEFAULT '',
+
+    is_active BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 -- INDEXES --

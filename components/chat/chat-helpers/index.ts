@@ -466,8 +466,8 @@ export const handleAssistantMessage = async (
     currentChat.process_id,
     modelData.modelId,
     "AssistantMessage",
-    "assistant", // TODO: Should be not needed with MessageType.
-    profile.display_name,
+    "assistant", // TODO: Should not be needed with MessageType.
+    "aware", // TODO: override when selecting assistant name on start.
     generatedText
   )
   let createdAssistantMessage: TablesInsert<"ui_messages"> = {

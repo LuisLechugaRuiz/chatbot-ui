@@ -1,11 +1,11 @@
 "use client"
 
 import { ChatbotUIContext } from "@/context/context"
-import { getProfileByUserId, updateProfile } from "@/db/profile"
+import { getProfileByUserId, updateProfile, createUserData } from "@/db/profile"
 import { uploadImage } from "@/db/storage/profile-images"
 import { getWorkspacesByUserId, updateWorkspace } from "@/db/workspaces"
 import { supabase } from "@/lib/supabase/browser-client"
-import { TablesUpdate } from "@/supabase/types"
+import { TablesUpdate, TablesInsert } from "@/supabase/types"
 import { ChatSettings } from "@/types"
 import { useRouter } from "next/navigation"
 import { useContext, useEffect, useState } from "react"
@@ -139,6 +139,12 @@ export default function SetupPage() {
         workspace.id === updatedWorkspace.id ? updatedWorkspace : workspace
       )
     )
+    const userData: TablesInsert<"users_data"> = {
+      user_id: profile.user_id,
+      name: displayName,
+      api_key: openaiAPIKey
+    }
+    createUserData(userData)
 
     router.push("/chat")
   }

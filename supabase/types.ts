@@ -41,6 +41,7 @@ export interface Database {
           id: string
           identity: string
           instructions: string
+          is_active: boolean
           name: string
           state: string
           task: string
@@ -55,6 +56,7 @@ export interface Database {
           id?: string
           identity: string
           instructions: string
+          is_active?: boolean
           name: string
           state?: string
           task: string
@@ -69,6 +71,7 @@ export interface Database {
           id?: string
           identity?: string
           instructions?: string
+          is_active?: boolean
           name?: string
           state?: string
           task?: string
@@ -1162,7 +1165,6 @@ export interface Database {
           id: string
           identity: string
           instructions: string
-          is_active: boolean
           name: string
           task: string
           tools_class: string
@@ -1175,7 +1177,6 @@ export interface Database {
           id?: string
           identity: string
           instructions: string
-          is_active?: boolean
           name: string
           task: string
           tools_class: string
@@ -1188,7 +1189,6 @@ export interface Database {
           id?: string
           identity?: string
           instructions?: string
-          is_active?: boolean
           name?: string
           task?: string
           tools_class?: string
@@ -1699,6 +1699,41 @@ export interface Database {
             foreignKeyName: "ui_messages_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      users_data: {
+        Row: {
+          api_key: string | null
+          created_at: string
+          id: string
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          api_key?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          api_key?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_data_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           }

@@ -169,9 +169,9 @@ export const ChatUI: FC<ChatUIProps> = ({}) => {
     const chat = await getChatByProcessId(params.chatid as string)
     if (!chat) return
 
-    if (chat.assistant_id) {
+    if (chat.agent_id) {
       const assistant = assistants.find(
-        assistant => assistant.id === chat.assistant_id
+        assistant => assistant.id === chat.agent_id
       )
 
       if (assistant) {

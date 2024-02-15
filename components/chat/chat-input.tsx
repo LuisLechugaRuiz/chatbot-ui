@@ -61,7 +61,7 @@ export const ChatInput: FC<ChatInputProps> = ({}) => {
         handleReceiveMessageAssistant(message, chatMessagesRef.current)
       })
     }
-  }, [selectedChat, chatMessages])
+  }, [selectedChat])
 
   const { handleInputChange } = usePromptAndCommand()
 

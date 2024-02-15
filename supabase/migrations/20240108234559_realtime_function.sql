@@ -16,4 +16,4 @@ alter
 alter
   publication supabase_realtime add table public.frontend_messages;
 alter
-  publication supabase_realtime add table public.profiles;
+  publication supabase_realtime add table public.users_data;
