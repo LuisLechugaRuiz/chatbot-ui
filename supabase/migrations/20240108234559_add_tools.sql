@@ -37,3 +37,24 @@ CREATE TRIGGER update_tools_updated_at
 BEFORE UPDATE ON tools
 FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
+
+-- FUNCTIONS --
+
+CREATE OR REPLACE FUNCTION get_tools(p_process_id UUID) 
+RETURNS TABLE (
+    id UUID,
+    user_id UUID,
+    process_state_id UUID,
+    created_at TIMESTAMPTZ,
+    name TEXT,
+    transition_state_name TEXT
+) AS $$
+BEGIN
+    -- Return the tools associated with the current state of the given process ID
+    RETURN QUERY
+    SELECT t.*
+    FROM tools t
+    INNER JOIN current_process_states cps ON t.process_state_id = cps.current_state_id
+    WHERE cps.process_id = p_process_id;
+END;
+$$ LANGUAGE plpgsql;

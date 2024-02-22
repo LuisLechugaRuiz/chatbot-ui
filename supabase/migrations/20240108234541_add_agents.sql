@@ -16,10 +16,10 @@ CREATE TABLE IF NOT EXISTS agents (
     -- REQUIRED
     name TEXT NOT NULL CHECK (char_length(name) <= 100),
     tools_class TEXT NOT NULL CHECK (char_length(tools_class) <= 100),
-    task TEXT NOT NULL CHECK (char_length(task) <= 10000),
-    instructions TEXT NOT NULL CHECK (char_length(instructions) <= 100000),
+    memory_mode TEXT NOT NULL CHECK (char_length(memory_mode) <= 100),
+    modalities TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
     state TEXT NOT NULL DEFAULT 'idle'::text CHECK (state = ANY (ARRAY['idle'::text, 'main_process'::text, 'thought_generator'::text])),
-    thought_generator_mode TEXT NOT NULL DEFAULT 'post'::text CHECK (thought_generator_mode = ANY (ARRAY['pre'::text, 'parallel'::text, 'post'::text])),
+    thought_generator_mode TEXT NOT NULL DEFAULT 'post'::text CHECK (thought_generator_mode = ANY (ARRAY['disabled'::text, 'pre'::text, 'parallel'::text, 'post'::text])),
     context TEXT NOT NULL DEFAULT '',
 
     is_active BOOLEAN NOT NULL DEFAULT FALSE

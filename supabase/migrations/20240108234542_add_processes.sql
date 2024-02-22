@@ -110,3 +110,25 @@ CREATE POLICY "Allow full access to own current_process_states"
     ON current_process_states
     USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
+
+-- FUNCTIONS --
+
+CREATE OR REPLACE FUNCTION get_current_process_state(p_process_id UUID) 
+RETURNS TABLE (
+    id UUID,
+    user_id UUID,
+    process_id UUID,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
+    name TEXT,
+    task TEXT,
+    instructions TEXT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT ps.*
+    FROM process_states ps
+    INNER JOIN current_process_states cps ON ps.id = cps.current_state_id
+    WHERE cps.process_id = p_process_id;
+END;
+$$ LANGUAGE plpgsql;
