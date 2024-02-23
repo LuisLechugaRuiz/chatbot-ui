@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS topics (
 
     -- RELATIONSHIPS
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    agent_id UUID DEFAULT NULL REFERENCES agents(id) ON DELETE SET NULL,
 
     -- METADATA
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -16,7 +17,8 @@ CREATE TABLE IF NOT EXISTS topics (
     -- REQUIRED
     name TEXT NOT NULL CHECK (char_length(name) <= 100),
     description TEXT NOT NULL CHECK (char_length(description) <= 100000),
-    content TEXT DEFAULT ''::text
+    content TEXT DEFAULT ''::text,
+    is_private BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 -- INDEXES --
