@@ -1,35 +1,3 @@
---------------- TOPIC MESSAGES ---------------
-
--- TABLE --
-CREATE TABLE IF NOT EXISTS topic_messages (
-    -- ID
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-
-    -- RELATIONSHIPS
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE
-
-    -- METADATA
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ,
-
-    -- REQUIRED
-    name TEXT NOT NULL CHECK (char_length(name) <= 100),
-    messages_format JSONB NOT NULL
-);
-
--- INDEXES --
-
-CREATE INDEX topic_messages_id_idx ON topic_messages(user_id);
-
--- RLS --
-
-ALTER TABLE topic_messages ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Allow full access to own topic_messages"
-    ON topic_messages
-    USING (user_id = auth.uid())
-    WITH CHECK (user_id = auth.uid());
-
 --------------- TOPICS ---------------
 
 -- TABLE --
@@ -41,7 +9,6 @@ CREATE TABLE IF NOT EXISTS topics (
     -- RELATIONSHIPS
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     agent_id UUID DEFAULT NULL REFERENCES agents(id) ON DELETE SET NULL,
-    topic_message_id UUID NOT NULL REFERENCES topic_messages(id) ON DELETE CASCADE,
 
     -- METADATA
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -50,6 +17,7 @@ CREATE TABLE IF NOT EXISTS topics (
     -- REQUIRED
     name TEXT NOT NULL CHECK (char_length(name) <= 100),
     description TEXT NOT NULL CHECK (char_length(description) <= 100000),
+    message_format JSONB NOT NULL,
     message JSONB DEFAULT '{}'::jsonb,
 
     is_private BOOLEAN NOT NULL DEFAULT FALSE
@@ -88,11 +56,14 @@ CREATE TABLE IF NOT EXISTS topic_publishers (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
     topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
-    topic_message_id UUID NOT NULL REFERENCES topic_messages(id) ON DELETE CASCADE,
 
     -- METADATA
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ
+    updated_at TIMESTAMPTZ,
+
+    -- REQUIRED
+    topic_name TEXT NOT NULL,
+    message_format JSONB NOT NULL
 );
 
 -- INDEXES --
@@ -121,10 +92,10 @@ CREATE OR REPLACE FUNCTION create_topic_publisher(
     p_process_id UUID,
     p_topic_name TEXT
 )
-RETURNS TABLE(_id UUID, _topic_id UUID, _topic_message_id UUID) AS $$
+RETURNS TABLE(_id UUID, _topic_id UUID, _message_format JSONB) AS $$
 BEGIN
-    -- Find the topic by user_id and name, and get its id and topic_message_id
-    SELECT id, topic_message_id INTO _topic_id, _topic_message_id
+    -- Find the topic by user_id and name, and get its id and message_format
+    SELECT id, message_format INTO _topic_id, _message_format
     FROM topics
     WHERE user_id = p_user_id AND name = p_topic_name;
 
@@ -134,8 +105,8 @@ BEGIN
     END IF;
 
     -- Insert the new publisher into the topic_publishers table and return the new id
-    INSERT INTO topic_publishers (user_id, process_id, topic_id, topic_message_id)
-    VALUES (p_user_id, p_process_id, _topic_id, _topic_message_id)
+    INSERT INTO topic_publishers (user_id, process_id, topic_id, topic_name, message_format)
+    VALUES (p_user_id, p_process_id, _topic_id, p_topic_name, _message_format)
     RETURNING id INTO _id;
 
     RETURN NEXT;
@@ -155,11 +126,14 @@ CREATE TABLE IF NOT EXISTS topic_subscribers (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
     topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
-    topic_message_id UUID NOT NULL REFERENCES topic_messages(id) ON DELETE CASCADE,
 
     -- METADATA
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ
+    updated_at TIMESTAMPTZ,
+
+    -- REQUIRED
+    topic_name TEXT NOT NULL,
+    message_format JSONB NOT NULL
 );
 
 -- INDEXES --
@@ -188,10 +162,10 @@ CREATE OR REPLACE FUNCTION create_topic_subscriber(
     p_process_id UUID,
     p_topic_name TEXT
 )
-RETURNS TABLE(_id UUID, _topic_id UUID, _topic_message_id UUID) AS $$
+RETURNS TABLE(_id UUID, _topic_id UUID, _message_format JSONB) AS $$
 BEGIN
-    -- Find the topic by user_id and name, and get its id and topic_message_id
-    SELECT id, topic_message_id INTO _topic_id, _topic_message_id
+    -- Find the topic by user_id and name, and get its id and message_format
+    SELECT id, message_format INTO _topic_id, _message_format
     FROM topics
     WHERE user_id = p_user_id AND name = p_topic_name;
 
@@ -201,8 +175,8 @@ BEGIN
     END IF;
 
     -- Insert into topic_subscribers and return the new id
-    INSERT INTO topic_subscribers (user_id, process_id, topic_id, topic_message_id)
-    VALUES (p_user_id, p_process_id, _topic_id, _topic_message_id)
+    INSERT INTO topic_subscribers (user_id, process_id, topic_id, topic_name, message_format)
+    VALUES (p_user_id, p_process_id, _topic_id, p_topic_name, _message_format)
     RETURNING id INTO _id;
 
     -- Return the values

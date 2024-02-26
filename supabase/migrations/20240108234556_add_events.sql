@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS event_types (
 
     -- REQUIRED
     name TEXT NOT NULL CHECK (char_length(name) <= 100000),
-    description TEXT NOT NULL CHECK (char_length(description) <= 100000)
+    description TEXT NOT NULL CHECK (char_length(description) <= 100000),
+    message_format JSONB NOT NULL
 );
 
 -- INDEXES --
@@ -48,9 +49,9 @@ CREATE TABLE IF NOT EXISTS events (
     updated_at TIMESTAMPTZ,
 
     -- REQUIRED
-    event_type_id UUID NOT NULL REFERENCES event_types(id) ON DELETE CASCADE,
-    message_name TEXT NOT NULL CHECK (char_length(message_name) <= 100000),
-    content TEXT NOT NULL CHECK (char_length(content) <= 100000),
+    event_name TEXT NOT NULL,
+    event_description TEXT NOT NULL,
+    message JSONB NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'notified'::text]))
 );
 
@@ -76,27 +77,27 @@ EXECUTE PROCEDURE update_updated_at_column();
 
 
 -- FUNCTIONS --
-
+-- TODO: Verify that message satisfies the message_format of the event_type
 CREATE OR REPLACE FUNCTION create_event(
     p_user_id UUID,
     p_event_name TEXT,
-    p_message_name TEXT,
-    p_content TEXT
+    p_event_message JSONB
 )
 RETURNS SETOF events AS $$
 DECLARE
     _event_type_id UUID;
+    _event_description TEXT;
 BEGIN
     -- Check if a service with the same name and process_id already exists for the user
-    SELECT id INTO _event_type_id
+    SELECT description INTO _event_description
     FROM event_types
     WHERE user_id = p_user_id AND name = p_event_name;
 
     -- If a event_type is found, create a new event
     IF _event_type_id IS NOT NULL THEN
         RETURN QUERY
-        INSERT INTO events (user_id, event_type_id, message_name, content)
-        VALUES (p_user_id, _event_type_id, p_message_name, p_content)
+        INSERT INTO events (user_id, event_name, event_description, message)
+        VALUES (p_user_id, p_event_name, _event_description, p_event_message)
         RETURNING *;
     ELSE
         -- Optionally, handle the case where the event_type does not exist
@@ -105,68 +106,141 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---------------- SUBSCRIBED EVENTS ---------------
+--------------- EVENT PUBLISHERS ---------------
 
-CREATE TABLE IF NOT EXISTS subscribed_events (
+-- TABLE --
+
+CREATE TABLE IF NOT EXISTS event_publishers (
+    -- ID
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    -- RELATIONSHIPS
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
-    event_type_id UUID NOT NULL REFERENCES event_types(id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, process_id, event_type_id)
+
+    -- METADATA
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ,
+
+    -- REQUIRED
+    event_name TEXT NOT NULL,
+    event_description TEXT NOT NULL,
+    event_format JSONB NOT NULL
 );
+
+-- INDEXES --
+
+CREATE INDEX event_publishers_id_idx ON event_publishers(user_id);
 
 -- RLS --
 
-ALTER TABLE subscribed_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE event_publishers ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow full access to own subscribed_events"
-    ON subscribed_events
+CREATE POLICY "Allow full access to own event_publishers"
+    ON event_publishers
     USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
 
+-- TRIGGERS --
+
+CREATE TRIGGER update_event_publisher_updated_at
+BEFORE UPDATE ON event_publishers
+FOR EACH ROW
+EXECUTE PROCEDURE update_updated_at_column();
+
 -- FUNCTIONS --
-
-ALTER TABLE subscribed_events
-ADD CONSTRAINT subscribed_events_unique_constraint UNIQUE (user_id, process_id, event_type_id);
-
-CREATE OR REPLACE FUNCTION create_event_subscription(p_process_id UUID, p_event_name TEXT)
-RETURNS TABLE(returned_user_id UUID, returned_event_type_id UUID) AS $$
-DECLARE
-    _event_type_id UUID;
-    _user_id UUID;
+-- TODO: Address me as with event_subscribers
+CREATE OR REPLACE FUNCTION create_event_publisher(
+    p_user_id UUID,
+    p_process_id UUID,
+    p_event_name TEXT
+)
+RETURNS TABLE(_id UUID, _event_description TEXT, _event_format JSONB) AS $$
 BEGIN
-    -- Retrieve the event_type_id based on event_name from the event_types table
-    SELECT id, user_id INTO _event_type_id, _user_id FROM event_types WHERE name = p_event_name LIMIT 1;
+    -- Find the topic by user_id and name, and get its id and topic_message_id
+    SELECT description, message_format INTO _event_description, _event_format
+    FROM event_types
+    WHERE user_id = p_user_id AND name = p_event_name;
 
-    -- Check if an event type with the given name exists
-    IF _event_type_id IS NOT NULL THEN
-        INSERT INTO subscribed_events (user_id, process_id, event_type_id)
-        VALUES (_user_id, p_process_id, _event_type_id)
-        ON CONFLICT (user_id, process_id, event_type_id) DO NOTHING;
-
-        -- Set the return values if the subscription was successfully inserted
-        returned_user_id := _user_id;
-        returned_event_type_id := _event_type_id;
-        RETURN NEXT;
-    ELSE
-        -- Handle the case where the event type does not exist
-        RAISE EXCEPTION 'Event type with name % does not exist.', p_event_name;
+    -- If no event type was found, raise an error
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Event Type with name % not found', p_event_name;
     END IF;
+
+    -- Insert the new publisher into the event_publishers table and return the new id
+    INSERT INTO event_publishers (user_id, process_id, event_name, event_description, event_format)
+    VALUES (p_user_id, p_process_id, p_event_name, _event_description, _event_format)
+    RETURNING id INTO _id;
+
+    RETURN NEXT;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION get_event_subscriptions(p_process_id UUID) 
-RETURNS TABLE (event_id UUID, name TEXT, content TEXT, status TEXT, updated_at TIMESTAMPTZ) AS $$
+--------------- EVENT SUBSCRIBERS ---------------
+
+-- TABLE --
+
+CREATE TABLE IF NOT EXISTS event_subscribers (
+    -- ID
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    -- RELATIONSHIPS
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
+
+    -- METADATA
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ,
+
+    -- REQUIRED
+    event_name TEXT NOT NULL,
+    event_description TEXT NOT NULL,
+    event_format JSONB NOT NULL
+);
+
+-- INDEXES --
+
+CREATE INDEX event_subscribers_id_idx ON event_subscribers(user_id);
+
+-- RLS --
+
+ALTER TABLE event_subscribers ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow full access to own event_subscribers"
+    ON event_subscribers
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+
+-- TRIGGERS --
+
+CREATE TRIGGER update_event_subscriber_updated_at
+BEFORE UPDATE ON event_subscribers
+FOR EACH ROW
+EXECUTE PROCEDURE update_updated_at_column();
+
+-- FUNCTIONS --
+CREATE OR REPLACE FUNCTION create_event_subscriber(
+    p_user_id UUID,
+    p_process_id UUID,
+    p_event_name TEXT
+)
+RETURNS TABLE(_id UUID, _event_description TEXT, _event_format JSONB) AS $$
 BEGIN
-    RETURN QUERY
-    SELECT 
-        e.id, 
-        et.name, 
-        e.content,
-        e.status,
-        e.updated_at
-    FROM subscribed_events se
-    JOIN event_types et ON se.event_type_id = et.id
-    JOIN events e ON se.event_type_id = e.event_type_id
-    WHERE se.process_id = p_process_id;
+    -- Find the topic by user_id and name, and get its id and topic_message_id
+    SELECT description, message_format INTO _event_description, _event_format
+    FROM event_types
+    WHERE user_id = p_user_id AND name = p_event_name;
+
+    -- If no event type was found, raise an error
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Event Type with name % not found', p_event_name;
+    END IF;
+
+    -- Insert the new subscriber into the event_subscribers table
+    INSERT INTO event_subscribers (user_id, process_id, event_name, event_description, event_format)
+    VALUES (p_user_id, p_process_id, p_event_name, _event_description, _event_format)
+    RETURNING id INTO _id;
+
+    RETURN NEXT;
 END;
 $$ LANGUAGE plpgsql;
