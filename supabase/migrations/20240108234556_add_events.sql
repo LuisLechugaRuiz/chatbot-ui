@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS events (
 
     -- RELATIONSHIPS
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    event_type_id UUID NOT NULL REFERENCES event_types(id) ON DELETE CASCADE,
 
     -- METADATA
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -52,6 +53,7 @@ CREATE TABLE IF NOT EXISTS events (
     event_name TEXT NOT NULL,
     event_description TEXT NOT NULL,
     message JSONB NOT NULL,
+    message_format JSONB NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'notified'::text]))
 );
 
@@ -77,28 +79,33 @@ EXECUTE PROCEDURE update_updated_at_column();
 
 
 -- FUNCTIONS --
--- TODO: Verify that message satisfies the message_format of the event_type
 CREATE OR REPLACE FUNCTION create_event(
     p_user_id UUID,
     p_event_name TEXT,
     p_event_message JSONB
 )
-RETURNS SETOF events AS $$
+RETURNS requests AS $$
 DECLARE
+    _id UUID;
     _event_type_id UUID;
     _event_description TEXT;
+    _message_format JSONB;
+    _status TEXT;
+    _new_event events;
 BEGIN
     -- Check if a service with the same name and process_id already exists for the user
-    SELECT description INTO _event_description
+    SELECT id, description, message_format INTO _event_type_id, _event_description, _message_format
     FROM event_types
     WHERE user_id = p_user_id AND name = p_event_name;
 
     -- If a event_type is found, create a new event
     IF _event_type_id IS NOT NULL THEN
         RETURN QUERY
-        INSERT INTO events (user_id, event_name, event_description, message)
-        VALUES (p_user_id, p_event_name, _event_description, p_event_message)
-        RETURNING *;
+        INSERT INTO events (user_id, event_type_id, event_name, event_description, message, message_format)
+        VALUES (p_user_id, _event_type_id, p_event_name, _event_description, p_event_message, _message_format)
+        RETURNING * INTO _new_event;
+
+        RETURN _new_event;
     ELSE
         -- Optionally, handle the case where the event_type does not exist
         RAISE EXCEPTION 'Event type with name % does not exist.', p_event_name;
@@ -117,6 +124,7 @@ CREATE TABLE IF NOT EXISTS event_publishers (
     -- RELATIONSHIPS
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
+    event_type_id UUID NOT NULL REFERENCES event_types(id) ON DELETE CASCADE,
 
     -- METADATA
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -149,16 +157,15 @@ FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 -- FUNCTIONS --
--- TODO: Address me as with event_subscribers
 CREATE OR REPLACE FUNCTION create_event_publisher(
     p_user_id UUID,
     p_process_id UUID,
     p_event_name TEXT
 )
-RETURNS TABLE(_id UUID, _event_description TEXT, _event_format JSONB) AS $$
+RETURNS TABLE(_id UUID, _event_type_id UUID, _event_description TEXT, _event_format JSONB) AS $$
 BEGIN
     -- Find the topic by user_id and name, and get its id and topic_message_id
-    SELECT description, message_format INTO _event_description, _event_format
+    SELECT id, description, message_format INTO _event_type_id, _event_description, _event_format
     FROM event_types
     WHERE user_id = p_user_id AND name = p_event_name;
 
@@ -168,8 +175,8 @@ BEGIN
     END IF;
 
     -- Insert the new publisher into the event_publishers table and return the new id
-    INSERT INTO event_publishers (user_id, process_id, event_name, event_description, event_format)
-    VALUES (p_user_id, p_process_id, p_event_name, _event_description, _event_format)
+    INSERT INTO event_publishers (user_id, process_id, event_type_id, event_name, event_description, event_format)
+    VALUES (p_user_id, p_process_id, p_event_name, _event_type_id, _event_description, _event_format)
     RETURNING id INTO _id;
 
     RETURN NEXT;
@@ -187,6 +194,7 @@ CREATE TABLE IF NOT EXISTS event_subscribers (
     -- RELATIONSHIPS
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     process_id UUID NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
+    event_type_id UUID NOT NULL REFERENCES event_types(id) ON DELETE CASCADE,
 
     -- METADATA
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -224,10 +232,10 @@ CREATE OR REPLACE FUNCTION create_event_subscriber(
     p_process_id UUID,
     p_event_name TEXT
 )
-RETURNS TABLE(_id UUID, _event_description TEXT, _event_format JSONB) AS $$
+RETURNS TABLE(_id UUID, _event_type_id UUID, _event_description TEXT, _event_format JSONB) AS $$
 BEGIN
     -- Find the topic by user_id and name, and get its id and topic_message_id
-    SELECT description, message_format INTO _event_description, _event_format
+    SELECT id, description, message_format INTO _event_type_id, _event_description, _event_format
     FROM event_types
     WHERE user_id = p_user_id AND name = p_event_name;
 
@@ -237,8 +245,8 @@ BEGIN
     END IF;
 
     -- Insert the new subscriber into the event_subscribers table
-    INSERT INTO event_subscribers (user_id, process_id, event_name, event_description, event_format)
-    VALUES (p_user_id, p_process_id, p_event_name, _event_description, _event_format)
+    INSERT INTO event_subscribers (user_id, process_id, event_type_id, event_name, event_description, event_format)
+    VALUES (p_user_id, p_process_id, p_event_name, _event_type_id, _event_description, _event_format)
     RETURNING id INTO _id;
 
     RETURN NEXT;

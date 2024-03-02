@@ -215,11 +215,11 @@ CREATE TABLE IF NOT EXISTS requests (
     updated_at TIMESTAMPTZ,
 
     -- REQUIRED
-    -- TODO: determine if we need 'client_process_name'
     client_process_name TEXT NOT NULL CHECK (char_length(client_process_name) <= 1000),
     request JSONB NOT NULL,
     feedback JSONB DEFAULT '{}'::jsonb,
     response JSONB DEFAULT '{}'::jsonb,
+    priority INTEGER NOT NULL DEFAULT 0,
     is_async BOOLEAN NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'success'::text, 'failure'::text, 'waiting_user_feedback'::text]))
 );
@@ -248,10 +248,12 @@ EXECUTE PROCEDURE update_updated_at_column();
 
 CREATE OR REPLACE FUNCTION create_request(
     p_user_id UUID,
+    p_service_id UUID,
+    p_client_id UUID,
     p_client_process_id UUID,
     p_client_process_name TEXT,
-    p_service_id TEXT,
     p_request_message JSONB,
+    p_priority INTEGER,
     p_is_async BOOLEAN
 )
 RETURNS requests AS $$
@@ -292,13 +294,12 @@ BEGIN
 
     FOR _key IN SELECT jsonb_object_keys(_response_format)
     LOOP
-        _feedback_message := jsonb_set(_response_message, ARRAY[_key], 'null'::jsonb);
+        _response_message := jsonb_set(_response_message, ARRAY[_key], 'null'::jsonb);
     END LOOP;
 
     -- Insert a new request into the requests table and return the entire row
-    -- TODO: TRANSLATE THE FEEDBACK FORMAT TO DEFAULT FEEDBACK
-    INSERT INTO requests (user_id, service_id, service_process_id, client_process_id, client_process_name, request, feedback, response, is_async, status)
-    VALUES (p_user_id, p_service_id, _service_process_id, p_client_process_id, p_client_process_name,  p_request_message, _feedback_message, _response_message, p_is_async, 'pending')
+    INSERT INTO requests (user_id, service_id, client_id, service_process_id, client_process_id, client_process_name, request, feedback, response, priority, is_async, status)
+    VALUES (p_user_id, p_service_id, p_client_id, _service_process_id, p_client_process_id, p_client_process_name,  p_request_message, _feedback_message, _response_message, p_priority, p_is_async, 'pending')
     RETURNING * INTO _new_request;
 
     RETURN _new_request;
