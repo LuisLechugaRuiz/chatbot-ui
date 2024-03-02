@@ -141,7 +141,10 @@ CREATE TABLE IF NOT EXISTS request_clients (
     updated_at TIMESTAMPTZ,
 
     -- REQUIRED
-    process_name TEXT NOT NULL CHECK (char_length(process_name) <= 1000)
+    process_name TEXT NOT NULL CHECK (char_length(process_name) <= 1000),
+    service_name TEXT NOT NULL CHECK (char_length(service_name) <= 1000),
+    service_description TEXT NOT NULL CHECK (char_length(service_description) <= 100000),
+    request_format JSONB NOT NULL
 );
 
 -- INDEXES --
@@ -170,9 +173,9 @@ CREATE OR REPLACE FUNCTION create_request_client(
     p_process_id UUID,
     p_service_name TEXT
 )
-RETURNS TABLE(_id UUID, _service_id UUID, _process_name TEXT) AS $$
+RETURNS TABLE(_id UUID, _process_name TEXT, _service_id UUID, _service_name TEXT, _service_description TEXT, _request_format JSONB) AS $$
 BEGIN
-    SELECT id INTO _service_id
+    SELECT id, name, description, request_format INTO _service_id, _service_name, _service_description, _request_format
     FROM request_services
     WHERE user_id = p_user_id AND name = p_service_name;
 
@@ -185,8 +188,8 @@ BEGIN
     END IF;
 
     -- Insert the new client into the request_clients table and return the new id
-    INSERT INTO request_clients (user_id, process_id, service_id, process_name)
-    VALUES (p_user_id, p_process_id, _service_id, _process_name)
+    INSERT INTO request_clients (user_id, process_id, service_id, process_name, service_name, service_description, request_format)
+    VALUES (p_user_id, p_process_id, _service_id, _process_name, _service_name, _service_description, _request_format)
     RETURNING id INTO _id;
 
     RETURN NEXT;
@@ -212,6 +215,7 @@ CREATE TABLE IF NOT EXISTS requests (
     updated_at TIMESTAMPTZ,
 
     -- REQUIRED
+    -- TODO: determine if we need 'client_process_name'
     client_process_name TEXT NOT NULL CHECK (char_length(client_process_name) <= 1000),
     request JSONB NOT NULL,
     feedback JSONB DEFAULT '{}'::jsonb,

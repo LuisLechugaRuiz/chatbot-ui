@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS topic_publishers (
 
     -- REQUIRED
     topic_name TEXT NOT NULL,
+    topic_description TEXT NOT NULL,
     message_format JSONB NOT NULL
 );
 
@@ -92,10 +93,10 @@ CREATE OR REPLACE FUNCTION create_topic_publisher(
     p_process_id UUID,
     p_topic_name TEXT
 )
-RETURNS TABLE(_id UUID, _topic_id UUID, _message_format JSONB) AS $$
+RETURNS TABLE(_id UUID, _topic_id UUID, _topic_description TEXT, _message_format JSONB) AS $$
 BEGIN
     -- Find the topic by user_id and name, and get its id and message_format
-    SELECT id, message_format INTO _topic_id, _message_format
+    SELECT id, description, message_format INTO _topic_id, _topic_description, _message_format
     FROM topics
     WHERE user_id = p_user_id AND name = p_topic_name;
 
@@ -105,8 +106,8 @@ BEGIN
     END IF;
 
     -- Insert the new publisher into the topic_publishers table and return the new id
-    INSERT INTO topic_publishers (user_id, process_id, topic_id, topic_name, message_format)
-    VALUES (p_user_id, p_process_id, _topic_id, p_topic_name, _message_format)
+    INSERT INTO topic_publishers (user_id, process_id, topic_id, topic_name, topic_description, message_format)
+    VALUES (p_user_id, p_process_id, _topic_id, p_topic_name, _topic_description, _message_format)
     RETURNING id INTO _id;
 
     RETURN NEXT;
@@ -133,6 +134,7 @@ CREATE TABLE IF NOT EXISTS topic_subscribers (
 
     -- REQUIRED
     topic_name TEXT NOT NULL,
+    topic_description TEXT NOT NULL,
     message_format JSONB NOT NULL
 );
 
@@ -162,10 +164,10 @@ CREATE OR REPLACE FUNCTION create_topic_subscriber(
     p_process_id UUID,
     p_topic_name TEXT
 )
-RETURNS TABLE(_id UUID, _topic_id UUID, _message_format JSONB) AS $$
+RETURNS TABLE(_id UUID, _topic_id UUID, _topic_description TEXT, _message_format JSONB) AS $$ 
 BEGIN
     -- Find the topic by user_id and name, and get its id and message_format
-    SELECT id, message_format INTO _topic_id, _message_format
+    SELECT id, description, message_format INTO _topic_id, _topic_description, _message_format
     FROM topics
     WHERE user_id = p_user_id AND name = p_topic_name;
 
@@ -175,8 +177,8 @@ BEGIN
     END IF;
 
     -- Insert into topic_subscribers and return the new id
-    INSERT INTO topic_subscribers (user_id, process_id, topic_id, topic_name, message_format)
-    VALUES (p_user_id, p_process_id, _topic_id, p_topic_name, _message_format)
+    INSERT INTO topic_subscribers (user_id, process_id, topic_id, topic_name, topic_description, message_format)
+    VALUES (p_user_id, p_process_id, _topic_id, p_topic_name, _topic_description, _message_format)
     RETURNING id INTO _id;
 
     -- Return the values
