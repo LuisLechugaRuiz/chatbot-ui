@@ -80,35 +80,41 @@ EXECUTE PROCEDURE update_updated_at_column();
 
 -- FUNCTIONS --
 CREATE OR REPLACE FUNCTION create_event(
-    p_user_id UUID,
-    p_event_name TEXT,
+    p_publisher_id UUID,
     p_event_message JSONB
 )
-RETURNS requests AS $$
+RETURNS events AS $$
 DECLARE
     _id UUID;
+    _user_id UUID;
     _event_type_id UUID;
+    _event_name TEXT;
     _event_description TEXT;
     _message_format JSONB;
     _status TEXT;
     _new_event events;
 BEGIN
-    -- Check if a service with the same name and process_id already exists for the user
-    SELECT id, description, message_format INTO _event_type_id, _event_description, _message_format
-    FROM event_types
-    WHERE user_id = p_user_id AND name = p_event_name;
+    -- Get the event_type_id from client_id
+    SELECT event_type_id INTO _event_type_id
+    FROM event_publishers
+    WHERE id = p_publisher_id;
 
-    -- If a event_type is found, create a new event
+    -- If a event_publisher is found, create a new event
     IF _event_type_id IS NOT NULL THEN
+        -- Check if a service with the same name and process_id already exists for the user
+        SELECT user_id, name, description, message_format INTO _user_id, _event_name, _event_description, _message_format
+        FROM event_types
+        WHERE id = _event_type_id;
+
         RETURN QUERY
         INSERT INTO events (user_id, event_type_id, event_name, event_description, message, message_format)
-        VALUES (p_user_id, _event_type_id, p_event_name, _event_description, p_event_message, _message_format)
+        VALUES (_user_id, _event_type_id, _event_name, _event_description, p_event_message, _message_format)
         RETURNING * INTO _new_event;
 
         RETURN _new_event;
     ELSE
-        -- Optionally, handle the case where the event_type does not exist
-        RAISE EXCEPTION 'Event type with name % does not exist.', p_event_name;
+        -- Optionally, handle the case where the publisher does not exist
+        RAISE EXCEPTION 'Event publisher with id % does not exist.', p_publisher_id;
     END IF;
 END;
 $$ LANGUAGE plpgsql;

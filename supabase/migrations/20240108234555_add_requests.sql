@@ -1,8 +1,8 @@
---------------- REQUEST MESSAGES ---------------
+--------------- REQUEST TYPES ---------------
 
 -- TABLE --
 
-CREATE TABLE IF NOT EXISTS request_messages (
+CREATE TABLE IF NOT EXISTS request_types (
     -- ID
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
@@ -22,14 +22,14 @@ CREATE TABLE IF NOT EXISTS request_messages (
 
 -- INDEXES --
 
-CREATE INDEX request_messages_id_idx ON request_messages(user_id);
+CREATE INDEX request_types_id_idx ON request_types(user_id);
 
 -- RLS --
 
-ALTER TABLE request_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE request_types ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow full access to own request_messages"
-    ON request_messages
+CREATE POLICY "Allow full access to own request_types"
+    ON request_types
     USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
 
@@ -103,9 +103,9 @@ BEGIN
         RETURN NEXT;
     END IF;
 
-    -- Fetch the formats from request_messages based on request name
+    -- Fetch the formats from request_types based on request name
     SELECT request_format, feedback_format, response_format INTO _request_format, _feedback_format, _response_format
-    FROM request_messages
+    FROM request_types
     WHERE user_id = p_user_id AND name = p_request_name;
 
     -- Check if the formats were found
