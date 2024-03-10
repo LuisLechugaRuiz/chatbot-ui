@@ -45,7 +45,7 @@ export interface Database {
           state: string
           task: string
           thought_generator_mode: string
-          tools_class: string
+          capability_class: string
           updated_at: string | null
           user_id: string
         }
@@ -59,7 +59,7 @@ export interface Database {
           state?: string
           task: string
           thought_generator_mode?: string
-          tools_class: string
+          capability_class: string
           updated_at?: string | null
           user_id: string
         }
@@ -73,7 +73,7 @@ export interface Database {
           state?: string
           task?: string
           thought_generator_mode?: string
-          tools_class?: string
+          capability_class?: string
           updated_at?: string | null
           user_id?: string
         }
@@ -1164,7 +1164,7 @@ export interface Database {
           instructions: string
           name: string
           task: string
-          tools_class: string
+          capability_class: string
           updated_at: string | null
           user_id: string
         }
@@ -1176,7 +1176,7 @@ export interface Database {
           instructions: string
           name: string
           task: string
-          tools_class: string
+          capability_class: string
           updated_at?: string | null
           user_id: string
         }
@@ -1188,7 +1188,7 @@ export interface Database {
           instructions?: string
           name?: string
           task?: string
-          tools_class?: string
+          capability_class?: string
           updated_at?: string | null
           user_id?: string
         }

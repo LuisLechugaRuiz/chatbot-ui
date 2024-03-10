@@ -2,6 +2,7 @@
 
 -- TABLE --
 
+-- TODO: Event type should not be defined by user_id, it should be defined BY ORGANIZATION ID!!
 CREATE TABLE IF NOT EXISTS event_types (
     -- ID
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

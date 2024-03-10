@@ -5,7 +5,7 @@ export const getAssistantProcessById = async (userId: string) => {
     .from("processes")
     .select("*")
     .eq("user_id", userId)
-    .eq("tools_class", "Assistant")
+    .eq("capability_class", "Assistant")
     .single()
 
   if (!process) {

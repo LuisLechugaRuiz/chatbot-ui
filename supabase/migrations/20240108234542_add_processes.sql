@@ -16,8 +16,9 @@ CREATE TABLE IF NOT EXISTS processes (
 
     -- REQUIRED
     name TEXT NOT NULL CHECK (char_length(name) <= 100),
-    tools_class TEXT NOT NULL CHECK (char_length(tools_class) <= 100),
+    capability_class TEXT NOT NULL CHECK (char_length(capability_class) <= 100),
     flow_type TEXT NOT NULL DEFAULT 'interactive'::text CHECK (flow_type = ANY (ARRAY['interactive'::text, 'independent'::text]))
+    type TEXT NOT NULL DEFAULT 'main'::text CHECK (type = ANY (ARRAY['main'::text, 'internal'::text])),
 );
 
 -- INDEXES --
@@ -84,7 +85,7 @@ FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
 
---------------- CURRETN PROCESS STATES ---------------
+--------------- CURRENT PROCESS STATES ---------------
 
 -- TABLE --
 
