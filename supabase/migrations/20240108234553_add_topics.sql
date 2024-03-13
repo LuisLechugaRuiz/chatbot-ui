@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS topics (
 
     -- RELATIONSHIPS
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    agent_id UUID DEFAULT NULL REFERENCES agents(id) ON DELETE SET NULL,
 
     -- METADATA
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -18,9 +17,7 @@ CREATE TABLE IF NOT EXISTS topics (
     name TEXT NOT NULL CHECK (char_length(name) <= 100),
     description TEXT NOT NULL CHECK (char_length(description) <= 100000),
     message_format JSONB NOT NULL,
-    message JSONB DEFAULT '{}'::jsonb,
-
-    is_private BOOLEAN NOT NULL DEFAULT FALSE
+    message JSONB DEFAULT '{}'::jsonb
 );
 
 -- INDEXES --

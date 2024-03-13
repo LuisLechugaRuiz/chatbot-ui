@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS event_types (
     -- REQUIRED
     name TEXT NOT NULL CHECK (char_length(name) <= 100000),
     description TEXT NOT NULL CHECK (char_length(description) <= 100000),
-    message_format JSONB NOT NULL
+    message_format JSONB NOT NULL,
+    priority INTEGER NOT NULL DEFAULT 0
 );
 
 -- INDEXES --
@@ -55,7 +56,9 @@ CREATE TABLE IF NOT EXISTS events (
     event_description TEXT NOT NULL,
     message JSONB NOT NULL,
     message_format JSONB NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'notified'::text]))
+    details TEXT NOT NULL DEFAULT '{}',
+    priority INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'success'::text, 'failure'::text]))
 );
 
 -- INDEXES --
@@ -103,13 +106,13 @@ BEGIN
     -- If a event_publisher is found, create a new event
     IF _event_type_id IS NOT NULL THEN
         -- Check if a service with the same name and process_id already exists for the user
-        SELECT user_id, name, description, message_format INTO _user_id, _event_name, _event_description, _message_format
+        SELECT user_id, name, description, message_format, priority INTO _user_id, _event_name, _event_description, _message_format, _priority
         FROM event_types
         WHERE id = _event_type_id;
 
         RETURN QUERY
-        INSERT INTO events (user_id, event_type_id, event_name, event_description, message, message_format)
-        VALUES (_user_id, _event_type_id, _event_name, _event_description, p_event_message, _message_format)
+        INSERT INTO events (user_id, event_type_id, event_name, event_description, message, message_format, priority)
+        VALUES (_user_id, _event_type_id, _event_name, _event_description, p_event_message, _message_format, _priority)
         RETURNING * INTO _new_event;
 
         RETURN _new_event;

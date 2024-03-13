@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS requests (
     request JSONB NOT NULL,
     response JSONB DEFAULT '{}'::jsonb,
     priority INTEGER NOT NULL DEFAULT 0,
-    status TEXT NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'success'::text, 'failure'::text, 'waiting_user_feedback'::text]))
+    status TEXT NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'success'::text, 'failure'::text]))
 );
 
 -- INDEXES --
